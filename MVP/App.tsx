@@ -1,56 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Animated } from 'react-native';
 import Constants from 'expo-constants';
-import { MaterialIcons } from '@expo/vector-icons';
 import EnvironmentIndicator from './src/components/EnvironmentIndicator';
+import BuildNotesComponent from './src/components/BuildNotesComponent';
 import { environmentService } from './src/config/environments';
-
-const BuildNotes = ({ version, isVisible, onClose }) => {
-  if (!isVisible) return null;
-
-  const notes = {
-    '1.0.0': {
-      title: 'Version 1.0.0',
-      notes: [
-        'Initial release with peer-to-peer spitball shooting!',
-        'QR code-based connection.',
-        '3D spitball animations.',
-      ],
-    },
-    '1.0.1': {
-      title: 'Version 1.0.1',
-      notes: [
-        'Added environment management system (DEV/TEST/LIVE)',
-        'Environment indicator in top-right corner (tap to switch)',
-        'Environment-specific API endpoints and configuration',
-        'Persistent environment settings',
-      ],
-    },
-  }[version] || { title: 'Unknown Version', notes: ['No notes available'] };
-
-  return (
-    <View style={styles.notesContainer}>
-      <View style={styles.notesHeader}>
-        <Text style={styles.notesTitle}>{notes.title} (Build {version})</Text>
-        <TouchableOpacity onPress={onClose}>
-          <Text style={styles.closeButton}>✕</Text>
-        </TouchableOpacity>
-      </View>
-      <ScrollView style={styles.notesScrollView}>
-        {notes.notes.map((note, index) => (
-          <View key={index} style={styles.noteItem}>
-            <Text style={styles.bulletPoint}>•</Text>
-            <Text style={styles.noteText}>{note}</Text>
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-};
 
 export default function App() {
   const [notesVisible, setNotesVisible] = useState(false);
-  const appVersion = Constants.manifest?.version || '1.0.0'; // Ensure version fallback is correct
+  // Updated way to access the version in newer Expo SDK
+  const appVersion = Constants.expoConfig?.version || '1.0.1'; // Default to latest version if unavailable
   const [environment, setEnvironment] = useState(environmentService.getEnvironment());
   const [fadeAnim] = useState(new Animated.Value(1));
 
@@ -69,7 +27,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {/* Add Environment Indicator */}
+      {/* Environment Indicator */}
       <EnvironmentIndicator position="top" />
       
       {/* Version Indicator - styled similar to Environment Indicator but with light gray color */}
@@ -82,7 +40,8 @@ export default function App() {
         </Animated.View>
       </TouchableOpacity>
       
-      <BuildNotes
+      {/* Using our new component that fetches notes from CHANGELOG.md */}
+      <BuildNotesComponent
         version={appVersion}
         isVisible={notesVisible}
         onClose={() => setNotesVisible(false)}
