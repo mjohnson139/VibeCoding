@@ -2,6 +2,27 @@
 
 All notable changes to the Spitball app will be documented in this file.
 
+## [1.0.2] - 2025-04-05
+
+### Added
+- Expo Nearby Connections implementation for peer-to-peer connectivity
+- Bluetooth-based device discovery and connection handling
+- QR code generation now includes device ID and username
+- Connection status indications for Bluetooth connectivity
+- Web interface placeholder with mobile device mockup
+- Visual progress indicators for milestone completion
+
+### Changed
+- Replaced WebSocket-based networking with Nearby Connections API
+- Updated QR code scanner to work with new connection method
+- Modified connection flow to use Bluetooth instead of IP/port
+- Updated error messages to guide users about Bluetooth requirements
+- Updated todo list to reflect completed connection tasks
+
+### Fixed
+- Improved connection reliability across different networks
+- Eliminated firewall and NAT traversal issues by using direct device-to-device connections
+
 ## [1.0.1] - 2025-04-05
 
 ### Added

@@ -14,24 +14,23 @@
 
 ## Feature: Peer Discovery & Connection (PRD 3.2)
 
-- [x] **Tinker:** Implement QR code generation (displaying local IP/port)
+- [x] **Tinker:** Implement QR code generation (displaying device ID)
 - [x] **Tinker:** Implement QR code scanning
 - [x] **Tinker:** Design and implement the qrcode view, that shows on start, with an image of a camera that allows you to switch to scan mode.  Keep the camera the size of the QRcode and show a faint view of the QR code that it generated as an overlay.  
-- [-] **Tinker:** Allow for a basic token based auth that requires a scam of the QRCode to be able to connect.  Also allow a basic user profile to be encoded in the QR code with a handle, and a the players stats.  
-- [-] **Tinker:** Establish WebSocket server on one peer
-- [-] **Tinker:** Establish WebSocket client connection on the other peer after scan
-- [-] **Tinker:** Implement connection status animation (oscillating gradient)
-- [-] **Tinker:** Implement success (green glow) and failure (red flash + beep) states for animation
-- [ ] **Test:** Test connection on the same local network
+- [x] **Tinker:** Allow for a basic token based auth that requires a scan of the QRCode to be able to connect. Also allow a basic user profile to be encoded in the QR code with a handle, and the players stats.  
+- [x] **Tinker:** Establish peer-to-peer connection using Nearby Connections
+- [x] **Tinker:** Implement connection status animation (oscillating gradient)
+- [x] **Tinker:** Implement success (green glow) and failure (red flash + beep) states for animation
+- [ ] **Test:** Test connection between devices with Bluetooth enabled
   - **Test Instructions:**
-    1. Launch app on two different devices on the same WiFi network
+    1. Launch app on two different devices with Bluetooth enabled
     2. On Device A: Navigate to "Connect" screen by tapping "Start Game" button
-    3. Verify QR code displayed on Device A is clear and accompanied by text showing the local IP/port
+    3. Verify QR code displayed on Device A is clear and accompanied by text showing the device ID
     4. On Device B: Navigate to "Scan" screen by tapping "Join Game" button
     5. Hold Device B camera up to Device A's QR code
     6. Verify that Device B shows oscillating red-yellow-green gradient during connection
     7. Verify connection success: Both screens should glow solid green and display "Connected!"
-    8. Test failure case: Turn off WiFi on one device during connection and verify red flash with audible beep
+    8. Test failure case: Turn off Bluetooth on one device during connection and verify red flash with audible beep
     9. Verify "Disconnect" button appears and functions on both devices after connection
 
 ## Feature: Spitball Firing & Receiving (PRD 3.3)

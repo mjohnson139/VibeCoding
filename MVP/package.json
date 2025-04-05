@@ -1,6 +1,6 @@
 {
   "name": "mvp",
-  "version": "1.0.4",
+  "version": "1.0.2",
   "main": "index.ts",
   "scripts": {
     "start": "kill-port 19000 2>/dev/null || true && expo start --port 19000",
