@@ -1,121 +1,6 @@
-// Networking utilities for peer-to-peer connection
-import * as Network from 'expo-network';
+// Networking utilities for peer-to-peer connection using expo-nearby-connections
+import * as NearbyConnections from 'expo-nearby-connections';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-
-// Simple WebSocket server for React Native
-class WebSocketServer {
-  private connections: WebSocket[] = [];
-  private isListening: boolean = false;
-  private server: any = null;
-  private port: number;
-  private onConnectionCallback: ((socket: WebSocket) => void) | null = null;
-  private onMessageCallback: ((data: any, socket: WebSocket) => void) | null = null;
-  
-  constructor(port: number = 8080) {
-    this.port = port;
-  }
-  
-  public async start(): Promise<boolean> {
-    if (this.isListening) {
-      console.log('WebSocket server is already listening');
-      return true;
-    }
-    
-    try {
-      // Use a different implementation based on platform
-      if (Platform.OS === 'web') {
-        // For web, we can use native WebSocket server
-        await this.startWebServer();
-      } else {
-        // For mobile, we'll use a WebSocket server library
-        // This is a stub - in a real implementation you'd use a native module or polyfill
-        console.log('WebSocket server starting on mobile platform...');
-        this.isListening = true;
-        
-        // Mock successful server start for testing
-        setTimeout(() => {
-          console.log('WebSocket server started on port', this.port);
-          this.mockIncomingConnections();
-        }, 1000);
-        
-        return true;
-      }
-      
-      return this.isListening;
-    } catch (error) {
-      console.error('Failed to start WebSocket server:', error);
-      return false;
-    }
-  }
-  
-  private async startWebServer(): Promise<void> {
-    // This is a stub for web implementation
-    console.log('Starting WebSocket server on web...');
-    this.isListening = true;
-  }
-  
-  public stop(): void {
-    if (!this.isListening) {
-      return;
-    }
-    
-    if (this.server) {
-      try {
-        // Close the server
-        this.server.close();
-      } catch (error) {
-        console.error('Error closing WebSocket server:', error);
-      } finally {
-        this.server = null;
-      }
-    }
-    
-    // Close all connections
-    this.connections.forEach(socket => {
-      try {
-        socket.close();
-      } catch (error) {
-        console.error('Error closing WebSocket connection:', error);
-      }
-    });
-    
-    this.connections = [];
-    this.isListening = false;
-    console.log('WebSocket server stopped');
-  }
-  
-  public onConnection(callback: (socket: WebSocket) => void): void {
-    this.onConnectionCallback = callback;
-  }
-  
-  public onMessage(callback: (data: any, socket: WebSocket) => void): void {
-    this.onMessageCallback = callback;
-  }
-  
-  public broadcast(message: string): void {
-    this.connections.forEach(socket => {
-      try {
-        socket.send(message);
-      } catch (error) {
-        console.error('Error broadcasting message:', error);
-      }
-    });
-  }
-  
-  public isRunning(): boolean {
-    return this.isListening;
-  }
-  
-  // Mock function for testing - simulates incoming connections
-  private mockIncomingConnections(): void {
-    console.log('WebSocket server is ready to accept connections on port', this.port);
-    console.log('When a QR code is scanned, the device will attempt to connect to this server');
-    
-    // This is where we would normally set up listeners for incoming connections
-    // For now, we're just mocking the server behavior for testing
-  }
-}
 
 export enum ConnectionState {
   DISCONNECTED = 'disconnected',
@@ -126,29 +11,171 @@ export enum ConnectionState {
 
 export interface ConnectionInfo {
   deviceId: string;
-  ipAddress: string;
-  port: number;
+  ipAddress?: string; // No longer needed but kept for compatibility
+  port?: number; // No longer needed but kept for compatibility
   username?: string;
 }
 
-// Implementation for React Native using WebSockets
+// Simple event emitter implementation for React Native
+class SimpleEventEmitter {
+  private listeners: Map<string, Function[]> = new Map();
+
+  on(event: string, callback: Function): void {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, []);
+    }
+    this.listeners.get(event)?.push(callback);
+  }
+
+  off(event: string, callback: Function): void {
+    if (!this.listeners.has(event)) return;
+    const eventListeners = this.listeners.get(event);
+    if (!eventListeners) return;
+    
+    const index = eventListeners.indexOf(callback);
+    if (index !== -1) {
+      eventListeners.splice(index, 1);
+    }
+  }
+
+  emit(event: string, ...args: any[]): void {
+    if (!this.listeners.has(event)) return;
+    const eventListeners = this.listeners.get(event);
+    if (!eventListeners) return;
+    
+    for (const callback of eventListeners) {
+      callback(...args);
+    }
+  }
+}
+
 export class PeerConnection {
-  private socket: WebSocket | null = null;
   private connectionState: ConnectionState = ConnectionState.DISCONNECTED;
   private onStateChangeCallback: ((state: ConnectionState) => void) | null = null;
   private onMessageCallback: ((data: any) => void) | null = null;
-  private isReconnecting: boolean = false;
   private cachedDeviceId: string | null = null;
   private readonly DEVICE_ID_STORAGE_KEY = 'SPITBALL_DEVICE_ID';
-  private reconnectAttempts: number = 0;
-  private maxReconnectAttempts: number = 5;
-  private reconnectTimeout: any = null;
-  private server: WebSocketServer | null = null;
   private isHost: boolean = false;
+  private connections: Map<string, string> = new Map(); // Map of endpoint ID to device ID
+  private eventEmitter: SimpleEventEmitter = new SimpleEventEmitter();
+  private serviceId: string = 'com.spitball.app';
+  private isInitialized: boolean = false;
+  private isAdvertising: boolean = false;
+  private isDiscovering: boolean = false;
   
   constructor() {
     // Try to load the device ID from storage when the class is instantiated
     this.loadDeviceId();
+    this.initialize();
+  }
+  
+  // Initialize the NearbyConnections module
+  private async initialize(): Promise<void> {
+    try {
+      // First check if Nearby Connections is available
+      if (!(await NearbyConnections.isAvailableAsync())) {
+        console.error('Nearby Connections is not available on this device');
+        this.setConnectionState(ConnectionState.ERROR);
+        return;
+      }
+      
+      await NearbyConnections.initialize();
+      this.isInitialized = true;
+      console.log('Nearby Connections initialized successfully');
+      
+      // Set up event listeners
+      this.setupEventListeners();
+    } catch (error) {
+      console.error('Failed to initialize Nearby Connections:', error);
+      this.setConnectionState(ConnectionState.ERROR);
+    }
+  }
+  
+  // Set up event listeners for NearbyConnections events
+  private setupEventListeners(): void {
+    // Handle endpoint discovery
+    NearbyConnections.onEndpointDiscovered(({ endpointId, serviceId, endpointName }) => {
+      console.log(`Discovered endpoint: ${endpointName} (${endpointId})`);
+      
+      // Request a connection to the discovered endpoint
+      this.requestConnection(endpointId, endpointName);
+    });
+    
+    // Handle connection requests
+    NearbyConnections.onConnectionInitiated(({ endpointId, endpointName, authenticationToken }) => {
+      console.log(`Connection initiated from: ${endpointName} (${endpointId})`);
+      console.log(`Authentication token: ${authenticationToken}`);
+      
+      // Automatically accept all connection requests
+      NearbyConnections.acceptConnection(endpointId);
+    });
+    
+    // Handle successful connections
+    NearbyConnections.onConnectionResult(({ endpointId, status }) => {
+      if (status === NearbyConnections.ConnectionStatus.CONNECTED) {
+        console.log(`Connected to endpoint: ${endpointId}`);
+        this.connections.set(endpointId, endpointId);
+        this.setConnectionState(ConnectionState.CONNECTED);
+        
+        // Send our device ID to the other endpoint
+        if (this.cachedDeviceId) {
+          const message = JSON.stringify({
+            type: 'identity',
+            deviceId: this.cachedDeviceId
+          });
+          NearbyConnections.sendPayload(endpointId, message);
+        }
+      } else {
+        console.log(`Failed to connect to endpoint: ${endpointId}`);
+        this.setConnectionState(ConnectionState.ERROR);
+      }
+    });
+    
+    // Handle disconnections
+    NearbyConnections.onDisconnected(({ endpointId }) => {
+      console.log(`Disconnected from endpoint: ${endpointId}`);
+      this.connections.delete(endpointId);
+      
+      // If no connections left, set state to disconnected
+      if (this.connections.size === 0) {
+        this.setConnectionState(ConnectionState.DISCONNECTED);
+      }
+    });
+    
+    // Handle incoming data/payloads
+    NearbyConnections.onPayloadReceived(({ endpointId, payloadType, payload }) => {
+      if (payloadType === NearbyConnections.PayloadType.BYTES) {
+        try {
+          const message = JSON.parse(payload);
+          console.log('Received message:', message);
+          
+          // Handle identity messages specifically
+          if (message.type === 'identity') {
+            this.connections.set(endpointId, message.deviceId);
+          }
+          
+          // Forward the message to the callback
+          if (this.onMessageCallback) {
+            this.onMessageCallback(message);
+          }
+        } catch (error) {
+          console.error('Error parsing received payload:', error);
+        }
+      }
+    });
+  }
+  
+  // Request a connection to a discovered endpoint
+  private async requestConnection(endpointId: string, endpointName: string): Promise<void> {
+    try {
+      await NearbyConnections.requestConnection(
+        this.cachedDeviceId || 'Unknown',
+        endpointId
+      );
+      console.log(`Connection requested to ${endpointName} (${endpointId})`);
+    } catch (error) {
+      console.error('Error requesting connection:', error);
+    }
   }
   
   // Load device ID from AsyncStorage
@@ -158,9 +185,16 @@ export class PeerConnection {
       if (storedId) {
         this.cachedDeviceId = storedId;
         console.log('Loaded device ID from storage:', storedId);
+      } else {
+        // Generate a new device ID if none exists
+        this.cachedDeviceId = this.generateDeviceId();
+        this.saveDeviceId(this.cachedDeviceId);
       }
     } catch (error) {
       console.error('Failed to load device ID:', error);
+      // Generate a new device ID as fallback
+      this.cachedDeviceId = this.generateDeviceId();
+      this.saveDeviceId(this.cachedDeviceId);
     }
   }
   
@@ -174,243 +208,125 @@ export class PeerConnection {
     }
   }
   
-  // Get local connection info for QR code
-  async getConnectionInfo(): Promise<ConnectionInfo> {
-    const ipAddress = await Network.getIpAddressAsync();
-    let deviceId = this.cachedDeviceId;
-    
-    // If we don't have a cached ID, generate a new one and save it
-    if (!deviceId) {
-      deviceId = this.generateDeviceId();
-      this.cachedDeviceId = deviceId;
-      this.saveDeviceId(deviceId);
-    }
-    
-    // Start a WebSocket server to listen for incoming connections
-    await this.startServer();
-    
-    return {
-      deviceId,
-      ipAddress,
-      port: 8080, // Default port
-      username: 'Player1', // Could be customized by user
-    };
-  }
-  
+  // Generate a random device ID
   private generateDeviceId(): string {
     return Math.random().toString(36).substring(2, 15);
   }
   
-  // Start the WebSocket server explicitly and return connection info
-  async startServer(): Promise<ConnectionInfo> {
-    // Get the device ID
-    let deviceId = this.cachedDeviceId;
-    if (!deviceId) {
-      deviceId = this.generateDeviceId();
-      this.cachedDeviceId = deviceId;
-      await this.saveDeviceId(deviceId);
+  // Start advertising our device to be discovered by others
+  async startAdvertising(): Promise<ConnectionInfo> {
+    if (!this.isInitialized) {
+      await this.initialize();
     }
     
-    // Get the IP address
-    const ipAddress = await Network.getIpAddressAsync();
-    
-    // If server is already running, don't start another one
-    if (this.server && this.server.isRunning()) {
-      console.log('WebSocket server is already running');
-    } else {
-      // Create and start the WebSocket server
-      this.server = new WebSocketServer();
-      const success = await this.server.start();
-      
-      if (success) {
-        console.log('WebSocket server started successfully, accepting all connections');
-        this.isHost = true;
-        
-        // Set up event handlers for the server
-        this.server.onConnection((socket) => {
-          console.log('New client connected to server');
-          
-          // When a client connects, update the connection state
-          this.setConnectionState(ConnectionState.CONNECTED);
-        });
-        
-        this.server.onMessage((data, socket) => {
-          console.log('Received message from client:', data);
-          
-          // Forward incoming messages to the message callback
-          if (this.onMessageCallback) {
-            this.onMessageCallback(data);
-          }
-        });
-      } else {
-        console.error('Failed to start WebSocket server');
-        throw new Error('Failed to start WebSocket server');
-      }
+    if (this.isAdvertising) {
+      console.log('Already advertising');
+      return this.getConnectionInfo();
     }
     
-    // Always return connection info even if server is mocked
-    const connectionInfo = {
-      deviceId,
-      ipAddress,
-      port: 8080, // Default port
-      username: 'Player1', // Could be customized by user
-    };
-    
-    // Log the connection info for debugging
-    console.log('Generated connection info for QR code:', JSON.stringify(connectionInfo));
-    
-    return connectionInfo;
-  }
-  
-  // Stop the WebSocket server explicitly
-  stopServer(): void {
-    if (this.server) {
-      console.log('Stopping WebSocket server...');
-      this.server.stop();
-      this.server = null;
-      this.isHost = false;
-    } else {
-      console.log('No WebSocket server running to stop');
-    }
-  }
-  
-  // Connect to a peer using WebSocket
-  connect(connectionInfo: ConnectionInfo): void {
     try {
-      // Clean up any existing connection
-      this.disconnect();
+      console.log('Starting to advertise with name:', this.cachedDeviceId);
       
-      this.setConnectionState(ConnectionState.CONNECTING);
-      
-      // Create WebSocket connection
-      const wsProtocol = 'ws'; // Use 'wss' for secure connections
-      const wsUrl = `${wsProtocol}://${connectionInfo.ipAddress}:${connectionInfo.port}`;
-      
-      console.log(`Connecting to WebSocket at ${wsUrl}`);
-      
-      // Add network debugging
-      Network.getNetworkStateAsync().then(state => {
-        console.log('Current network state:', JSON.stringify(state));
+      await NearbyConnections.startAdvertising({
+        serviceId: this.serviceId,
+        strategy: NearbyConnections.Strategy.P2P_CLUSTER,
+        name: this.cachedDeviceId || 'Unknown',
       });
       
-      this.socket = new WebSocket(wsUrl);
+      this.isAdvertising = true;
+      this.isHost = true;
       
-      // Set up event handlers
-      this.socket.onopen = this.handleOpen.bind(this);
-      this.socket.onmessage = this.handleMessage.bind(this);
-      this.socket.onclose = this.handleClose.bind(this);
-      this.socket.onerror = (error) => {
-        console.error('WebSocket detailed error:', JSON.stringify(error));
-        this.handleError(error);
-      };
+      console.log('Started advertising successfully');
+      return this.getConnectionInfo();
+    } catch (error) {
+      console.error('Failed to start advertising:', error);
+      this.setConnectionState(ConnectionState.ERROR);
+      throw error;
+    }
+  }
+  
+  // Start discovering nearby devices
+  async startDiscovery(): Promise<void> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+    
+    if (this.isDiscovering) {
+      console.log('Already discovering');
+      return;
+    }
+    
+    try {
+      await NearbyConnections.startDiscovering({
+        serviceId: this.serviceId,
+        strategy: NearbyConnections.Strategy.P2P_CLUSTER,
+      });
       
+      this.isDiscovering = true;
+      this.setConnectionState(ConnectionState.CONNECTING);
+      
+      console.log('Started discovering successfully');
+    } catch (error) {
+      console.error('Failed to start discovering:', error);
+      this.setConnectionState(ConnectionState.ERROR);
+      throw error;
+    }
+  }
+  
+  // Stop advertising
+  async stopAdvertising(): Promise<void> {
+    if (this.isAdvertising) {
+      try {
+        await NearbyConnections.stopAdvertising();
+        this.isAdvertising = false;
+        console.log('Stopped advertising');
+      } catch (error) {
+        console.error('Error stopping advertising:', error);
+      }
+    }
+  }
+  
+  // Stop discovering
+  async stopDiscovery(): Promise<void> {
+    if (this.isDiscovering) {
+      try {
+        await NearbyConnections.stopDiscovering();
+        this.isDiscovering = false;
+        console.log('Stopped discovering');
+      } catch (error) {
+        console.error('Error stopping discovery:', error);
+      }
+    }
+  }
+  
+  // Get connection info (for compatibility with previous implementation)
+  async getConnectionInfo(): Promise<ConnectionInfo> {
+    return {
+      deviceId: this.cachedDeviceId || 'Unknown',
+      username: 'Player1', // Could be customized by user
+    };
+  }
+  
+  // Connect to a peer
+  // Note: With Nearby Connections, both parties need to be advertising/discovering
+  // So this method starts discovery to find the peer with the given deviceId
+  connect(connectionInfo: ConnectionInfo): void {
+    try {
+      this.setConnectionState(ConnectionState.CONNECTING);
+      
+      // Start discovering nearby devices
+      this.startDiscovery();
+      
+      console.log(`Looking for device with ID: ${connectionInfo.deviceId}`);
     } catch (error) {
       console.error('Connection error:', error);
       this.setConnectionState(ConnectionState.ERROR);
     }
   }
   
-  // WebSocket event handlers
-  private handleOpen(): void {
-    console.log('WebSocket connection established');
-    this.setConnectionState(ConnectionState.CONNECTED);
-    this.reconnectAttempts = 0;
-    
-    // Send initial message with our device ID
-    if (this.socket && this.cachedDeviceId) {
-      this.socket.send(JSON.stringify({
-        type: 'identity',
-        deviceId: this.cachedDeviceId
-      }));
-    }
-  }
-  
-  private handleMessage(event: WebSocketMessageEvent): void {
-    try {
-      const message = JSON.parse(event.data);
-      console.log('Received message:', message);
-      
-      if (this.onMessageCallback) {
-        this.onMessageCallback(message);
-      }
-    } catch (error) {
-      console.error('Error parsing message:', error, event.data);
-    }
-  }
-  
-  private handleClose(event: WebSocketCloseEvent): void {
-    console.log(`WebSocket closed: ${event.code} ${event.reason}`);
-    
-    // Don't try to reconnect if we intentionally closed
-    if (this.connectionState === ConnectionState.DISCONNECTED) {
-      return;
-    }
-    
-    // Try to reconnect if it wasn't a normal closure
-    if (event.code !== 1000) {
-      this.tryReconnect();
-    } else {
-      this.setConnectionState(ConnectionState.DISCONNECTED);
-    }
-  }
-  
-  private handleError(error: Event): void {
-    console.error('WebSocket error:', error);
-    this.setConnectionState(ConnectionState.ERROR);
-    
-    // Don't try to reconnect on error - just set the state to ERROR and stop
-    this.isReconnecting = false;
-    this.reconnectAttempts = this.maxReconnectAttempts; // Set to max to prevent future attempts
-  }
-  
-  // Try to reconnect with exponential backoff
-  private tryReconnect(): void {
-    // Don't attempt to reconnect if we've already had an error
-    if (this.connectionState === ConnectionState.ERROR) {
-      console.log('Connection in ERROR state, not attempting to reconnect');
-      return;
-    }
-    
-    if (this.isReconnecting || this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log('Maximum reconnection attempts reached or already reconnecting');
-      this.setConnectionState(ConnectionState.ERROR);
-      return;
-    }
-    
-    this.isReconnecting = true;
-    this.reconnectAttempts++;
-    
-    const delay = Math.min(30000, Math.pow(2, this.reconnectAttempts) * 1000);
-    console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-    
-    // Clear any existing timeout
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-    }
-    
-    // Set new timeout
-    this.reconnectTimeout = setTimeout(() => {
-      // If we have connection info, try to reconnect
-      if (this.socket) {
-        console.log('Attempting to reconnect...');
-        // We need to recreate the WebSocket connection
-        this.socket = new WebSocket(this.socket.url);
-        this.socket.onopen = this.handleOpen.bind(this);
-        this.socket.onmessage = this.handleMessage.bind(this);
-        this.socket.onclose = this.handleClose.bind(this);
-        this.socket.onerror = this.handleError.bind(this);
-        
-        this.isReconnecting = false;
-      } else {
-        this.isReconnecting = false;
-        this.setConnectionState(ConnectionState.ERROR);
-      }
-    }, delay);
-  }
-  
-  // Send message to connected peer
+  // Send message to all connected peers
   sendMessage(type: string, data: any): void {
-    if (this.connectionState === ConnectionState.CONNECTED && this.socket) {
+    if (this.connectionState === ConnectionState.CONNECTED && this.connections.size > 0) {
       const message = JSON.stringify({
         type,
         data,
@@ -418,52 +334,45 @@ export class PeerConnection {
         timestamp: Date.now()
       });
       
-      this.socket.send(message);
-      console.log('Message sent:', { type, data });
+      // Send to all connected endpoints
+      for (const endpointId of this.connections.keys()) {
+        try {
+          NearbyConnections.sendPayload(endpointId, message);
+          console.log('Message sent to endpoint:', endpointId, { type, data });
+        } catch (error) {
+          console.error('Error sending message to endpoint:', endpointId, error);
+        }
+      }
     } else {
-      console.warn(`Cannot send message: Not connected (state: ${this.connectionState})`);
+      console.warn(`Cannot send message: Not connected (state: ${this.connectionState}, connections: ${this.connections.size})`);
     }
   }
   
-  // Disconnect from peer
+  // Disconnect from all peers
   disconnect(): void {
     if (this.connectionState !== ConnectionState.DISCONNECTED) {
       console.log('Disconnecting...');
       
-      // Set state to disconnected first to prevent reconnection attempts
+      // Set state to disconnected first
       this.setConnectionState(ConnectionState.DISCONNECTED);
       
-      // Clear any reconnection timeout
-      if (this.reconnectTimeout) {
-        clearTimeout(this.reconnectTimeout);
-        this.reconnectTimeout = null;
-      }
-      
-      // Close the WebSocket if it exists
-      if (this.socket) {
+      // Disconnect from all endpoints
+      for (const endpointId of this.connections.keys()) {
         try {
-          // Only close if the socket is not already closing or closed
-          if (this.socket.readyState === WebSocket.OPEN ||
-              this.socket.readyState === WebSocket.CONNECTING) {
-            this.socket.close(1000, 'Disconnected by user');
-          }
+          NearbyConnections.disconnectFromEndpoint(endpointId);
         } catch (error) {
-          console.error('Error closing WebSocket:', error);
-        } finally {
-          this.socket = null;
+          console.error('Error disconnecting from endpoint:', endpointId, error);
         }
       }
       
-      // Stop the WebSocket server if running
-      if (this.server) {
-        this.server.stop();
-        this.server = null;
-        this.isHost = false;
-      }
+      // Clear all connections
+      this.connections.clear();
       
-      // Reset reconnection state
-      this.isReconnecting = false;
-      this.reconnectAttempts = 0;
+      // Stop advertising and discovery
+      this.stopAdvertising();
+      this.stopDiscovery();
+      
+      this.isHost = false;
     }
   }
   
@@ -490,5 +399,16 @@ export class PeerConnection {
   // Get current connection state
   getConnectionState(): ConnectionState {
     return this.connectionState;
+  }
+  
+  // For backward compatibility with the WebSocketServer approach
+  // This starts advertising which allows others to discover this device
+  async startServer(): Promise<ConnectionInfo> {
+    return this.startAdvertising();
+  }
+  
+  // For backward compatibility with the WebSocketServer approach
+  stopServer(): void {
+    this.stopAdvertising();
   }
 }

@@ -26,22 +26,22 @@ const QRCodeGenerator = () => {
       try {
         // Start the server explicitly when generating QR code
         const info = await startServer();
-        console.log('Server started and ready for QR code generation:', info);
+        console.log('Started advertising and ready for QR code generation:', info);
         
         // Store connection info locally so we can display the QR code
         setLocalConnectionInfo(info);
         
-        // Show a notification about server limitations
+        // Show a notification about Nearby Connections
         setTimeout(() => {
           Alert.alert(
             'Connection Information',
-            'Your device is configured as a host. Note that direct connections may not work on all networks due to firewall restrictions.',
-            [{ text: 'OK', onPress: () => console.log('User acknowledged connection limitations') }]
+            'Your device is now discoverable via Bluetooth and Wi-Fi Direct. Other devices can scan this QR code to connect directly to you.',
+            [{ text: 'OK', onPress: () => console.log('User acknowledged connection information') }]
           );
         }, 500);
       } catch (err) {
-        console.error('Failed to start server:', err);
-        setError('Failed to start server: ' + 
+        console.error('Failed to start advertising:', err);
+        setError('Failed to start advertising: ' + 
           (err instanceof Error ? err.message : String(err)));
         // Reset the hasInitialized ref so we can try again if needed
         hasInitialized.current = false;
@@ -54,7 +54,7 @@ const QRCodeGenerator = () => {
     
     // Stop the server when component unmounts
     return () => {
-      console.log('QRCodeGenerator unmounting, stopping server');
+      console.log('QRCodeGenerator unmounting, stopping advertising');
       stopServer();
     };
   }, [startServer, stopServer]);
@@ -72,7 +72,10 @@ const QRCodeGenerator = () => {
   // Generate QR code value from connection data
   const getQRCodeValue = (): string => {
     if (!effectiveConnectionInfo) return '';
-    return JSON.stringify(effectiveConnectionInfo);
+    return JSON.stringify({
+      deviceId: effectiveConnectionInfo.deviceId,
+      username: effectiveConnectionInfo.username || 'Unknown Player'
+    });
   };
 
   // Get connection status text
@@ -108,7 +111,7 @@ const QRCodeGenerator = () => {
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007BFF" />
-          <Text style={styles.loading}>Initializing connection...</Text>
+          <Text style={styles.loading}>Starting device discovery...</Text>
         </View>
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
@@ -118,11 +121,15 @@ const QRCodeGenerator = () => {
           <QRCode value={getQRCodeValue()} size={200} />
           <View style={styles.infoContainer}>
             <Text style={styles.info}>Device ID: {effectiveConnectionInfo.deviceId}</Text>
-            <Text style={styles.info}>IP: {effectiveConnectionInfo.ipAddress}</Text>
-            <Text style={styles.info}>Port: {effectiveConnectionInfo.port}</Text>
+            {effectiveConnectionInfo.username && (
+              <Text style={styles.info}>Username: {effectiveConnectionInfo.username}</Text>
+            )}
           </View>
           <Text style={[styles.status, { color: getStatusColor() }]}>
             {getStatusText()}
+          </Text>
+          <Text style={styles.hint}>
+            Make sure both devices are within bluetooth range and have bluetooth enabled
           </Text>
         </>
       ) : (
@@ -174,6 +181,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginTop: 20,
+  },
+  hint: {
+    fontSize: 14,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginTop: 15,
+    fontStyle: 'italic',
   },
 });
 

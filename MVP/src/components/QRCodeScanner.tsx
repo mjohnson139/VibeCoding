@@ -4,7 +4,6 @@ import { Camera, CameraView } from 'expo-camera';
 import { useConnection } from './ConnectionProvider';
 import { ConnectionInfo } from '../utils/websocketUtils';
 import { Ionicons } from '@expo/vector-icons';
-import * as Network from 'expo-network';
 
 const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -23,7 +22,7 @@ const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
   // Monitor connection state for errors
   useEffect(() => {
     if (connectionState === 'error') {
-      setError('Failed to connect: Connection refused');
+      setError('Failed to connect: Check that both devices have Bluetooth enabled');
       setScanned(false);
     }
   }, [connectionState]);
@@ -43,33 +42,24 @@ const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
       }
       
       // Validate the connection data
-      if (!connectionData.ipAddress || !connectionData.port) {
-        throw new Error('QR code missing IP or port information.');
+      if (!connectionData.deviceId) {
+        throw new Error('QR code missing device ID information.');
       }
       
       // Show connecting state
       setConnecting(true);
       
-      // Test IP address connectivity before attempting WebSocket connection
-      try {
-        console.log(`Testing network connectivity to ${connectionData.ipAddress}:${connectionData.port}...`);
-        const networkState = await Network.getNetworkStateAsync();
-        console.log('Current network state:', networkState);
-      } catch (netErr) {
-        console.error('Network info error:', netErr);
-      }
-      
       // Call onScan callback with the raw data
       onScan(data);
       
-      // Connect to the server using the connection data
+      // Connect to the peer using the connection data
       connect(connectionData);
       
-      // Connection successful (handled by the ConnectionProvider state)
+      // Connection attempt initiated (result handled by the ConnectionProvider state)
     } catch (err) {
       // Handle connection error
       console.error('Connection error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to connect to server');
+      setError(err instanceof Error ? err.message : 'Failed to connect to peer');
       
       // Reset scanned status to allow scanning again
       setScanned(false);
@@ -120,7 +110,8 @@ const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
           {/* Display connection status if attempting to connect */}
           {connecting && (
             <View style={styles.statusContainer}>
-              <Text style={styles.statusText}>Connecting...</Text>
+              <Text style={styles.statusText}>Connecting via Nearby Connections...</Text>
+              <Text style={styles.statusSubText}>Make sure Bluetooth is enabled</Text>
             </View>
           )}
         </View>
@@ -236,6 +227,11 @@ const styles = StyleSheet.create({
   statusText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  statusSubText: {
+    color: 'white',
+    fontSize: 12,
+    marginTop: 4,
   },
   errorContainer: {
     position: 'absolute',

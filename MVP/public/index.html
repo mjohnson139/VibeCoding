@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spitball Mobile App</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f7;
+            color: #333;
+        }
+        .container {
+            max-width: 390px;
+            height: 100vh;
+            margin: 0 auto;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+        .status-bar {
+            background-color: #333;
+            color: white;
+            padding: 5px 15px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+        .env-indicator {
+            background-color: #ff6b6b;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        .version {
+            font-size: 10px;
+            color: #ddd;
+        }
+        .content {
+            padding: 20px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .connect-box {
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .qr-placeholder {
+            width: 200px;
+            height: 200px;
+            background-color: #ddd;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #666;
+        }
+        .button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+        .footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 15px;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status-bar">
+            <div class="env-indicator">DEV</div>
+            <div class="version">v1.0.5 (20250405.2)</div>
+        </div>
+        <div class="content">
+            <div class="title">Spitball</div>
+            
+            <div class="connect-box">
+                <h3>Connect with Friends</h3>
+                <p>Scan a QR code to connect or share yours</p>
+                
+                <div class="qr-placeholder">
+                    QR Code will appear here
+                </div>
+                
+                <button class="button">Generate My QR Code</button>
+            </div>
+            
+            <button class="button">Start Game</button>
+        </div>
+        
+        <div class="footer">
+            A fun decentralized game where friends can shoot spitballs at each other
+        </div>
+    </div>
+</body>
+</html>
