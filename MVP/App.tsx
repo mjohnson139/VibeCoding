@@ -6,13 +6,11 @@ import BuildNotesComponent from './src/components/BuildNotesComponent';
 import { environmentService } from './src/config/environments';
 import QRCodeGenerator from './src/components/QRCodeGenerator';
 import QRCodeScanner from './src/components/QRCodeScanner';
-import CameraTest from './src/components/CameraTest';
 
 export default function App() {
   const [notesVisible, setNotesVisible] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
-  const [showCameraTest, setShowCameraTest] = useState(false);
   // Updated way to access the version in newer Expo SDK
   const appVersion = Constants.expoConfig?.version || '1.0.1'; // Default to latest version if unavailable
   const [environment, setEnvironment] = useState(environmentService.getEnvironment());
@@ -77,17 +75,6 @@ export default function App() {
           onPress={() => setShowScanner(true)}
         >
           <Text style={styles.scanButtonText}>Scan QR Code</Text>
-        </TouchableOpacity>
-      )}
-
-      {showCameraTest ? (
-        <CameraTest />
-      ) : (
-        <TouchableOpacity
-          style={styles.qrButton}
-          onPress={() => setShowCameraTest(true)}
-        >
-          <Text style={styles.qrButtonText}>Test Camera</Text>
         </TouchableOpacity>
       )}
     </View>
