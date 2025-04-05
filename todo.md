@@ -6,6 +6,9 @@
 - [x] Create initial Expo project structure (`/MVP`) with TypeScript template
 - [x] Install necessary dependencies (`expo-barcode-scanner`, `react-native-qrcode-svg`, `@react-three/fiber`, `three`, `expo-sensors`)
 - [x] Create a rock solid .gitignore file.
+- [x] Create a list of development rules in the .github directory.
+- [x] List workflow optimization files in .github directory.
+- [x] Create versioning instructions file.
 
 ## Feature: Peer Discovery & Connection (PRD 3.2)
 
