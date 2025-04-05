@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Kill and Start App",
+            "type": "shell",
+            "command": "${command:taskShell}",
+            "windows": {
+                "command": "cmd",
+                "args": ["/c", "FOR /F \"tokens=5\" %a in ('netstat -ano ^| findstr :19000') do taskkill /F /PID %a && npm start"]
+            },
+            "osx": {
+                "command": "bash",
+                "args": ["-c", "lsof -ti:19000 | xargs kill -9 2>/dev/null; npm start"]
+            },
+            "linux": {
+                "command": "bash",
+                "args": ["-c", "fuser -k 19000/tcp; npm start"]
+            },
+            "problemMatcher": []
+        }
+    ]
+}
