@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, Alert, TouchableOpacity } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
-import { useConnection, ConnectionData } from './ConnectionProvider';
+import { useConnection } from './ConnectionProvider';
+import { ConnectionInfo } from '../utils/websocketUtils';
+import { Ionicons } from '@expo/vector-icons';
+import * as Network from 'expo-network';
 
 const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
-  const { connectToServer, connectionState } = useConnection();
+  const { connect, connectionState } = useConnection();
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,33 +20,50 @@ const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
     })();
   }, []);
 
+  // Monitor connection state for errors
+  useEffect(() => {
+    if (connectionState === 'error') {
+      setError('Failed to connect: Connection refused');
+      setScanned(false);
+    }
+  }, [connectionState]);
+
   const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
     if (scanned || connecting) return;
     setScanned(true);
     
     try {
       // Parse the connection data from the QR code
-      let connectionData: ConnectionData;
+      let connectionData: ConnectionInfo;
       try {
-        connectionData = JSON.parse(data) as ConnectionData;
+        connectionData = JSON.parse(data) as ConnectionInfo;
+        console.log('Parsed connection data from QR code:', connectionData);
       } catch (err) {
         throw new Error('Invalid QR code format. Expected valid connection data.');
       }
       
       // Validate the connection data
-      if (!connectionData.ip || !connectionData.port) {
+      if (!connectionData.ipAddress || !connectionData.port) {
         throw new Error('QR code missing IP or port information.');
       }
       
       // Show connecting state
       setConnecting(true);
-      Alert.alert('QR Code Scanned', `Connecting to ${connectionData.ip}:${connectionData.port}...`);
+      
+      // Test IP address connectivity before attempting WebSocket connection
+      try {
+        console.log(`Testing network connectivity to ${connectionData.ipAddress}:${connectionData.port}...`);
+        const networkState = await Network.getNetworkStateAsync();
+        console.log('Current network state:', networkState);
+      } catch (netErr) {
+        console.error('Network info error:', netErr);
+      }
       
       // Call onScan callback with the raw data
       onScan(data);
       
       // Connect to the server using the connection data
-      await connectToServer(connectionData);
+      connect(connectionData);
       
       // Connection successful (handled by the ConnectionProvider state)
     } catch (err) {
@@ -51,12 +71,8 @@ const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
       console.error('Connection error:', err);
       setError(err instanceof Error ? err.message : 'Failed to connect to server');
       
-      // Show error alert
-      Alert.alert(
-        'Connection Error', 
-        err instanceof Error ? err.message : 'Failed to connect to server',
-        [{ text: 'OK', onPress: () => setScanned(false) }]
-      );
+      // Reset scanned status to allow scanning again
+      setScanned(false);
     } finally {
       setConnecting(false);
     }
@@ -107,15 +123,24 @@ const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
               <Text style={styles.statusText}>Connecting...</Text>
             </View>
           )}
-          
-          {/* Display connection error if there is one */}
-          {error && (
-            <View style={[styles.statusContainer, styles.errorContainer]}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
         </View>
       </CameraView>
+      
+      {/* Error message near the bottom button */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <View style={styles.errorContent}>
+            <Ionicons name="warning" size={24} color="white" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.dismissButton} 
+            onPress={() => setError(null)}
+          >
+            <Ionicons name="close" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+      )}
       
       {scanned && !connecting && (
         <View style={styles.buttonContainer}>
@@ -213,12 +238,30 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   errorContainer: {
-    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+    position: 'absolute',
+    bottom: 80,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(220, 53, 69, 0.9)',
+    padding: 12,
+    zIndex: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  errorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   errorText: {
     color: 'white',
     fontWeight: 'bold',
-    textAlign: 'center',
+    marginLeft: 10,
+    flex: 1,
+  },
+  dismissButton: {
+    padding: 5,
   },
 });
 

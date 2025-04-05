@@ -89,8 +89,9 @@ const ConnectScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Connection status banner */}
-      {connectionState !== ConnectionState.DISCONNECTED && (
+      {/* Connection status banner - don't show error state when scanner is active */}
+      {connectionState !== ConnectionState.DISCONNECTED && 
+       !(showScanner && connectionState === ConnectionState.ERROR) && (
         <Animated.View style={styles.statusBanner}>
           <LinearGradient
             colors={getGradientColors() as string[]}

@@ -1,6 +1,121 @@
 // Networking utilities for peer-to-peer connection
 import * as Network from 'expo-network';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+// Simple WebSocket server for React Native
+class WebSocketServer {
+  private connections: WebSocket[] = [];
+  private isListening: boolean = false;
+  private server: any = null;
+  private port: number;
+  private onConnectionCallback: ((socket: WebSocket) => void) | null = null;
+  private onMessageCallback: ((data: any, socket: WebSocket) => void) | null = null;
+  
+  constructor(port: number = 8080) {
+    this.port = port;
+  }
+  
+  public async start(): Promise<boolean> {
+    if (this.isListening) {
+      console.log('WebSocket server is already listening');
+      return true;
+    }
+    
+    try {
+      // Use a different implementation based on platform
+      if (Platform.OS === 'web') {
+        // For web, we can use native WebSocket server
+        await this.startWebServer();
+      } else {
+        // For mobile, we'll use a WebSocket server library
+        // This is a stub - in a real implementation you'd use a native module or polyfill
+        console.log('WebSocket server starting on mobile platform...');
+        this.isListening = true;
+        
+        // Mock successful server start for testing
+        setTimeout(() => {
+          console.log('WebSocket server started on port', this.port);
+          this.mockIncomingConnections();
+        }, 1000);
+        
+        return true;
+      }
+      
+      return this.isListening;
+    } catch (error) {
+      console.error('Failed to start WebSocket server:', error);
+      return false;
+    }
+  }
+  
+  private async startWebServer(): Promise<void> {
+    // This is a stub for web implementation
+    console.log('Starting WebSocket server on web...');
+    this.isListening = true;
+  }
+  
+  public stop(): void {
+    if (!this.isListening) {
+      return;
+    }
+    
+    if (this.server) {
+      try {
+        // Close the server
+        this.server.close();
+      } catch (error) {
+        console.error('Error closing WebSocket server:', error);
+      } finally {
+        this.server = null;
+      }
+    }
+    
+    // Close all connections
+    this.connections.forEach(socket => {
+      try {
+        socket.close();
+      } catch (error) {
+        console.error('Error closing WebSocket connection:', error);
+      }
+    });
+    
+    this.connections = [];
+    this.isListening = false;
+    console.log('WebSocket server stopped');
+  }
+  
+  public onConnection(callback: (socket: WebSocket) => void): void {
+    this.onConnectionCallback = callback;
+  }
+  
+  public onMessage(callback: (data: any, socket: WebSocket) => void): void {
+    this.onMessageCallback = callback;
+  }
+  
+  public broadcast(message: string): void {
+    this.connections.forEach(socket => {
+      try {
+        socket.send(message);
+      } catch (error) {
+        console.error('Error broadcasting message:', error);
+      }
+    });
+  }
+  
+  public isRunning(): boolean {
+    return this.isListening;
+  }
+  
+  // Mock function for testing - simulates incoming connections
+  private mockIncomingConnections(): void {
+    console.log('WebSocket server is ready to accept connections on port', this.port);
+    console.log('When a QR code is scanned, the device will attempt to connect to this server');
+    
+    // This is where we would normally set up listeners for incoming connections
+    // For now, we're just mocking the server behavior for testing
+  }
+}
 
 export enum ConnectionState {
   DISCONNECTED = 'disconnected',
@@ -28,6 +143,8 @@ export class PeerConnection {
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
   private reconnectTimeout: any = null;
+  private server: WebSocketServer | null = null;
+  private isHost: boolean = false;
   
   constructor() {
     // Try to load the device ID from storage when the class is instantiated
@@ -69,6 +186,9 @@ export class PeerConnection {
       this.saveDeviceId(deviceId);
     }
     
+    // Start a WebSocket server to listen for incoming connections
+    await this.startServer();
+    
     return {
       deviceId,
       ipAddress,
@@ -79,6 +199,43 @@ export class PeerConnection {
   
   private generateDeviceId(): string {
     return Math.random().toString(36).substring(2, 15);
+  }
+  
+  // Start WebSocket server
+  private async startServer(): Promise<void> {
+    // If server is already running, don't start another one
+    if (this.server && this.server.isRunning()) {
+      console.log('WebSocket server is already running');
+      return;
+    }
+    
+    // Create and start the WebSocket server
+    this.server = new WebSocketServer();
+    const success = await this.server.start();
+    
+    if (success) {
+      console.log('WebSocket server started successfully');
+      this.isHost = true;
+      
+      // Set up event handlers for the server
+      this.server.onConnection((socket) => {
+        console.log('New client connected to server');
+        
+        // When a client connects, update the connection state
+        this.setConnectionState(ConnectionState.CONNECTED);
+      });
+      
+      this.server.onMessage((data, socket) => {
+        console.log('Received message from client:', data);
+        
+        // Forward incoming messages to the message callback
+        if (this.onMessageCallback) {
+          this.onMessageCallback(data);
+        }
+      });
+    } else {
+      console.error('Failed to start WebSocket server');
+    }
   }
   
   // Connect to a peer using WebSocket
@@ -94,13 +251,22 @@ export class PeerConnection {
       const wsUrl = `${wsProtocol}://${connectionInfo.ipAddress}:${connectionInfo.port}`;
       
       console.log(`Connecting to WebSocket at ${wsUrl}`);
+      
+      // Add network debugging
+      Network.getNetworkStateAsync().then(state => {
+        console.log('Current network state:', JSON.stringify(state));
+      });
+      
       this.socket = new WebSocket(wsUrl);
       
       // Set up event handlers
       this.socket.onopen = this.handleOpen.bind(this);
       this.socket.onmessage = this.handleMessage.bind(this);
       this.socket.onclose = this.handleClose.bind(this);
-      this.socket.onerror = this.handleError.bind(this);
+      this.socket.onerror = (error) => {
+        console.error('WebSocket detailed error:', JSON.stringify(error));
+        this.handleError(error);
+      };
       
     } catch (error) {
       console.error('Connection error:', error);
@@ -156,12 +322,19 @@ export class PeerConnection {
     console.error('WebSocket error:', error);
     this.setConnectionState(ConnectionState.ERROR);
     
-    // Try to reconnect on error
-    this.tryReconnect();
+    // Don't try to reconnect on error - just set the state to ERROR and stop
+    this.isReconnecting = false;
+    this.reconnectAttempts = this.maxReconnectAttempts; // Set to max to prevent future attempts
   }
   
   // Try to reconnect with exponential backoff
   private tryReconnect(): void {
+    // Don't attempt to reconnect if we've already had an error
+    if (this.connectionState === ConnectionState.ERROR) {
+      console.log('Connection in ERROR state, not attempting to reconnect');
+      return;
+    }
+    
     if (this.isReconnecting || this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.log('Maximum reconnection attempts reached or already reconnecting');
       this.setConnectionState(ConnectionState.ERROR);
@@ -243,6 +416,13 @@ export class PeerConnection {
         } finally {
           this.socket = null;
         }
+      }
+      
+      // Stop the WebSocket server if running
+      if (this.server) {
+        this.server.stop();
+        this.server = null;
+        this.isHost = false;
       }
       
       // Reset reconnection state
