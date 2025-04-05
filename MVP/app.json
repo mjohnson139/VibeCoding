@@ -2,7 +2,7 @@
   "expo": {
     "name": "Spitball",
     "slug": "spitball",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/spitball-icon.png",
     "userInterfaceStyle": "light",
@@ -14,14 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "20250404.1"
+      "buildNumber": "20250405.1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/spitball-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "versionCode": 20250404001
+      "versionCode": 20250405001
     },
     "web": {
       "favicon": "./assets/favicon.png"

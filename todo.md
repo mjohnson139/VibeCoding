@@ -10,7 +10,7 @@
 - [x] List workflow optimization files in .github directory.
 - [x] Create versioning instructions file.
 - [x] Create instruction files in the .github directory
-- [ ] Review and condense remaining instruction files (PR descriptions, code reviews)
+- [x] Review and condense remaining instruction files (PR descriptions, code reviews)
 
 ## Feature: Peer Discovery & Connection (PRD 3.2)
 
@@ -81,3 +81,22 @@
     5. Check notification appears with test results
     6. Tap notification to navigate directly to failing test details (if any)
 - [ ] Implement background testing notifications
+
+## Environment Management
+
+- [ ] Implement environment switching system (dev, test, live)
+  - [ ] Create environment configuration files for each environment
+  - [ ] Implement UI toggle for switching environments
+  - [ ] Store last used environment in local storage
+  - [ ] Add visual indicator of current environment (dev/test/live)
+  - [ ] Ensure all network calls use environment-specific endpoints
+  - [ ] Make environment switching possible without app restart
+  - [ ] Add environment-specific logging levels
+  - [ ] Create documentation for environment setup and switching
+  - **Implementation Guidelines:**
+    1. All code should be environment-aware
+    2. API endpoints should be configurable per environment
+    3. Features should be toggleable based on environment
+    4. Test data should be available in dev/test environments
+    5. Visual indicators should clearly show current environment (color-coded status bar)
+    6. Detailed logs in dev/test, minimal logs in live
