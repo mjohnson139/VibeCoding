@@ -47,6 +47,14 @@
 - Include the feature stage in the scope: `feat(idea->tinker)`, `feat(tinker->test)`
 - Summarize the prompts used to build the feature
 - For version-related commits, include version tag: `feat(v1.2.0): ...`
+- **Always update todo.md**: Before committing, ensure the todo.md file is updated with completed tasks marked with [x]
+
+## Pre-Commit Checklist
+
+1. Update the todo.md file to mark completed tasks
+2. Ensure commit message follows the structure above
+3. Include feature stage transitions in the commit scope when applicable
+4. Reference any relevant issues or PRs in the footer
 
 ## Example
 

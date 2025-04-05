@@ -18,6 +18,7 @@ This document outlines the development rules and guidelines for the Spitball Mob
    - Commit messages should be concise and accurate
    - Commit messages should be derived from summarization of prompts used to build the feature
    - Use feature branches for new development
+   - Always update todo.md with completed tasks before committing
 
 3. **Testing**
    - All features must have corresponding tests
