@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import Constants from 'expo-constants';
 import { MaterialIcons } from '@expo/vector-icons';
+import EnvironmentIndicator from './src/components/EnvironmentIndicator';
+import { environmentService } from './src/config/environments';
 
 const BuildNotes = ({ version, isVisible, onClose }) => {
   if (!isVisible) return null;
@@ -13,6 +15,15 @@ const BuildNotes = ({ version, isVisible, onClose }) => {
         'Initial release with peer-to-peer spitball shooting!',
         'QR code-based connection.',
         '3D spitball animations.',
+      ],
+    },
+    '1.0.1': {
+      title: 'Version 1.0.1',
+      notes: [
+        'Added environment management system (DEV/TEST/LIVE)',
+        'Environment indicator in top-right corner (tap to switch)',
+        'Environment-specific API endpoints and configuration',
+        'Persistent environment settings',
       ],
     },
   }[version] || { title: 'Unknown Version', notes: ['No notes available'] };
@@ -40,18 +51,37 @@ const BuildNotes = ({ version, isVisible, onClose }) => {
 export default function App() {
   const [notesVisible, setNotesVisible] = useState(false);
   const appVersion = Constants.manifest?.version || '1.0.0'; // Ensure version fallback is correct
+  const [environment, setEnvironment] = useState(environmentService.getEnvironment());
+  const [fadeAnim] = useState(new Animated.Value(1));
+
+  // Update the environment state when it changes
+  useEffect(() => {
+    const updateEnvironment = async () => {
+      // Listen for environment changes
+      setEnvironment(environmentService.getEnvironment());
+    };
+
+    updateEnvironment();
+  }, []);
+
+  // Get environment color for consistent styling
+  const { environmentColor } = environmentService.getConfig();
 
   return (
     <View style={styles.container}>
-      <View style={styles.infoContainer}>
-        <View>
-          <Text style={styles.versionLabel}>App Version:</Text>
-          <Text style={styles.versionText}>Version {appVersion}</Text>
-        </View>
-        <TouchableOpacity style={styles.infoButton} onPress={() => setNotesVisible(true)}>
-          <MaterialIcons name="info" size={30} color="#333" />
-        </TouchableOpacity>
-      </View>
+      {/* Add Environment Indicator */}
+      <EnvironmentIndicator position="top" />
+      
+      {/* Version Indicator - styled similar to Environment Indicator but with light gray color */}
+      <TouchableOpacity 
+        style={[styles.versionContainer, { backgroundColor: '#9e9e9e' }]}
+        onPress={() => setNotesVisible(true)}
+      >
+        <Animated.View style={{ opacity: fadeAnim }}>
+          <Text style={styles.versionText}>v{appVersion}</Text>
+        </Animated.View>
+      </TouchableOpacity>
+      
       <BuildNotes
         version={appVersion}
         isVisible={notesVisible}
@@ -68,17 +98,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  versionContainer: {
+    position: 'absolute',
+    top: 50,
+    right: 70, // Position to the left of environment indicator
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+    zIndex: 1000,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+  },
+  versionText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
   infoContainer: {
     position: 'absolute',
     top: 50,
     right: 10,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  versionText: {
-    fontSize: 12, // Match the size of the info button
-    color: '#888',
-    marginRight: 10, // Add spacing between version text and info button
   },
   versionLabel: {
     fontSize: 10, // Label size slightly smaller than version text
