@@ -1,41 +1,76 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { useConnection, ConnectionData } from './ConnectionProvider';
+import { useConnection } from './ConnectionProvider';
+import { ConnectionState } from '../utils/websocketUtils';
 
 const QRCodeGenerator = () => {
-  const { connectionData, startServer, connectionState } = useConnection();
+  const { getConnectionInfo, connectionInfo, connectionState } = useConnection();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasInitialized = useRef(false);
 
-  // Start the WebSocket server when the component mounts
+  // Initialize connection info when component mounts - run only once
   useEffect(() => {
-    const initServer = async () => {
+    const initConnection = async () => {
+      // Don't run if we've already initialized or already have connection info
+      if (hasInitialized.current || connectionInfo) {
+        return;
+      }
+      
+      hasInitialized.current = true;
       setIsLoading(true);
       setError(null);
+      
       try {
-        // Start the WebSocket server
-        await startServer();
+        await getConnectionInfo();
       } catch (err) {
-        console.error('Failed to start server:', err);
-        setError('Failed to start server: ' + (err instanceof Error ? err.message : String(err)));
+        console.error('Failed to get connection info:', err);
+        setError('Failed to initialize connection: ' + 
+          (err instanceof Error ? err.message : String(err)));
+        // Reset the hasInitialized ref so we can try again if needed
+        hasInitialized.current = false;
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (!connectionData) {
-      initServer();
-    }
-  }, [startServer, connectionData]);
+    initConnection();
+    // Empty dependency array ensures this only runs once on mount
+  }, []);
 
   // Generate QR code value from connection data
   const getQRCodeValue = (): string => {
-    if (!connectionData) return '';
-    
-    // Encode connection data as JSON
-    const jsonData = JSON.stringify(connectionData);
-    return jsonData;
+    if (!connectionInfo) return '';
+    return JSON.stringify(connectionInfo);
+  };
+
+  // Get connection status text
+  const getStatusText = () => {
+    switch (connectionState) {
+      case ConnectionState.CONNECTED:
+        return 'Connected!';
+      case ConnectionState.CONNECTING:
+        return 'Connecting...';
+      case ConnectionState.ERROR:
+        return 'Connection Failed';
+      default:
+        return 'Ready to Connect';
+    }
+  };
+
+  // Get status color
+  const getStatusColor = () => {
+    switch (connectionState) {
+      case ConnectionState.CONNECTED:
+        return '#28a745'; // Green
+      case ConnectionState.CONNECTING:
+        return '#ffc107'; // Yellow
+      case ConnectionState.ERROR:
+        return '#dc3545'; // Red
+      default:
+        return '#6c757d'; // Gray
+    }
   };
 
   return (
@@ -43,18 +78,21 @@ const QRCodeGenerator = () => {
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007BFF" />
-          <Text style={styles.loading}>Starting server...</Text>
+          <Text style={styles.loading}>Initializing connection...</Text>
         </View>
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
-      ) : connectionData ? (
+      ) : connectionInfo ? (
         <>
           <Text style={styles.label}>Scan this QR code to connect:</Text>
           <QRCode value={getQRCodeValue()} size={200} />
-          <Text style={styles.info}>IP: {connectionData.ip}</Text>
-          <Text style={styles.info}>Port: {connectionData.port}</Text>
-          <Text style={styles.status}>
-            Status: {connectionState === 'connected' ? 'Connected!' : 'Waiting for connection...'}
+          <View style={styles.infoContainer}>
+            <Text style={styles.info}>Device ID: {connectionInfo.deviceId}</Text>
+            <Text style={styles.info}>IP: {connectionInfo.ipAddress}</Text>
+            <Text style={styles.info}>Port: {connectionInfo.port}</Text>
+          </View>
+          <Text style={[styles.status, { color: getStatusColor() }]}>
+            {getStatusText()}
           </Text>
         </>
       ) : (
@@ -70,18 +108,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+    padding: 20,
   },
   loadingContainer: {
     alignItems: 'center',
   },
   label: {
-    fontSize: 16,
-    marginBottom: 10,
+    fontSize: 18,
+    marginBottom: 20,
     fontWeight: 'bold',
+  },
+  infoContainer: {
+    marginTop: 20,
+    width: '100%',
+    backgroundColor: '#f8f9fa',
+    padding: 15,
+    borderRadius: 8,
   },
   info: {
     fontSize: 14,
-    marginTop: 5,
+    marginVertical: 5,
   },
   loading: {
     fontSize: 16,
@@ -95,10 +141,9 @@ const styles = StyleSheet.create({
     margin: 10,
   },
   status: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 15,
-    color: '#007BFF',
+    marginTop: 20,
   },
 });
 

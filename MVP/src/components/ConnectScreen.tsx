@@ -4,7 +4,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import QRCodeGenerator from './QRCodeGenerator';
 import QRCodeScanner from './QRCodeScanner';
-import { useConnection, ConnectionState } from './ConnectionProvider';
+import { useConnection } from './ConnectionProvider';
+import { ConnectionState } from '../utils/websocketUtils';
 
 const ConnectScreen = () => {
   const [showScanner, setShowScanner] = useState(false);
@@ -76,6 +77,16 @@ const ConnectScreen = () => {
     setShowScanner(false);
   };
 
+  // Switch to QR generator when successfully connected as client
+  useEffect(() => {
+    if (connectionState === ConnectionState.CONNECTED && showScanner) {
+      // After successful connection, automatically switch back to QR generator view
+      setTimeout(() => {
+        setShowScanner(false);
+      }, 1500); // Small delay to show the connection success state
+    }
+  }, [connectionState, showScanner]);
+
   return (
     <View style={styles.container}>
       {/* Connection status banner */}
@@ -122,6 +133,7 @@ const ConnectScreen = () => {
       <TouchableOpacity
         style={styles.cameraButton}
         onPress={() => setShowScanner(!showScanner)}
+        disabled={connectionState === ConnectionState.CONNECTING}
       >
         <FontAwesome
           name={showScanner ? 'qrcode' : 'camera'}
