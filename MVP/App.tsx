@@ -4,9 +4,11 @@ import Constants from 'expo-constants';
 import EnvironmentIndicator from './src/components/EnvironmentIndicator';
 import BuildNotesComponent from './src/components/BuildNotesComponent';
 import { environmentService } from './src/config/environments';
+import QRCodeGenerator from './src/components/QRCodeGenerator';
 
 export default function App() {
   const [notesVisible, setNotesVisible] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
   // Updated way to access the version in newer Expo SDK
   const appVersion = Constants.expoConfig?.version || '1.0.1'; // Default to latest version if unavailable
   const [environment, setEnvironment] = useState(environmentService.getEnvironment());
@@ -46,6 +48,17 @@ export default function App() {
         isVisible={notesVisible}
         onClose={() => setNotesVisible(false)}
       />
+
+      {showQRCode ? (
+        <QRCodeGenerator />
+      ) : (
+        <TouchableOpacity
+          style={styles.qrButton}
+          onPress={() => setShowQRCode(true)}
+        >
+          <Text style={styles.qrButtonText}>Generate QR Code</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -153,5 +166,15 @@ const styles = StyleSheet.create({
   noteText: {
     fontSize: 12,
     flex: 1,
+  },
+  qrButton: {
+    padding: 10,
+    backgroundColor: '#007bff',
+    borderRadius: 5,
+  },
+  qrButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
