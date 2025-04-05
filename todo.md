@@ -14,7 +14,7 @@
 
 ## Feature: Peer Discovery & Connection (PRD 3.2)
 
-- [ ] **Tinker:** Implement QR code generation (displaying local IP/port)
+- [x] **Tinker:** Implement QR code generation (displaying local IP/port)
 - [ ] **Tinker:** Implement QR code scanning
 - [ ] **Tinker:** Establish WebSocket server on one peer
 - [ ] **Tinker:** Establish WebSocket client connection on the other peer after scan
