@@ -4,15 +4,12 @@ import Constants from 'expo-constants';
 import EnvironmentIndicator from './src/components/EnvironmentIndicator';
 import BuildNotesComponent from './src/components/BuildNotesComponent';
 import { environmentService } from './src/config/environments';
-import QRCodeGenerator from './src/components/QRCodeGenerator';
-import QRCodeScanner from './src/components/QRCodeScanner';
 import ConnectScreen from './src/components/ConnectScreen';
 import { FontAwesome } from '@expo/vector-icons';
+import ConnectionProvider from './src/components/ConnectionProvider';
 
 export default function App() {
   const [notesVisible, setNotesVisible] = useState(false);
-  const [showQRCode, setShowQRCode] = useState(false);
-  const [showScanner, setShowScanner] = useState(false);
   // Updated way to access the version in newer Expo SDK
   const appVersion = Constants.expoConfig?.version || '1.0.1'; // Default to latest version if unavailable
   const [environment, setEnvironment] = useState(environmentService.getEnvironment());
@@ -31,40 +28,37 @@ export default function App() {
   // Get environment color for consistent styling
   const { environmentColor } = environmentService.getConfig();
 
-  const handleScan = (data: string) => {
-    console.log('Scanned data:', data);
-    setShowScanner(false);
-  };
-
   return (
-    <View style={styles.container}>
-      {/* Environment Indicator */}
-      <EnvironmentIndicator position="top" />
-      
-      {/* Version Indicator - styled similar to Environment Indicator but with light gray color */}
-      <TouchableOpacity 
-        style={[styles.versionContainer, { backgroundColor: '#9e9e9e' }]}
-onPress={() => setNotesVisible(true)}
-      >
-        <Animated.View style={{ opacity: fadeAnim }}>
-          <Text style={styles.versionText}>v{appVersion}</Text>
-        </Animated.View>
-      </TouchableOpacity>
-      
-      {/* Using our new component that fetches notes from CHANGELOG.md */}
-      <BuildNotesComponent
-        version={appVersion}
-        isVisible={notesVisible}
-        onClose={() => setNotesVisible(false)}
-      />
-
-      <ConnectScreen />
-      <View style={styles.infoContainer}>
-        <TouchableOpacity style={styles.infoButton} onPress={() => setNotesVisible(!notesVisible)}>
-          <FontAwesome name="info-circle" size={20} color="#333" />
+    <ConnectionProvider>
+      <View style={styles.container}>
+        {/* Environment Indicator */}
+        <EnvironmentIndicator position="top" />
+        
+        {/* Version Indicator - styled similar to Environment Indicator but with light gray color */}
+        <TouchableOpacity 
+          style={[styles.versionContainer, { backgroundColor: '#9e9e9e' }]}
+          onPress={() => setNotesVisible(true)}
+        >
+          <Animated.View style={{ opacity: fadeAnim }}>
+            <Text style={styles.versionText}>v{appVersion}</Text>
+          </Animated.View>
         </TouchableOpacity>
+        
+        {/* Using our new component that fetches notes from CHANGELOG.md */}
+        <BuildNotesComponent
+          version={appVersion}
+          isVisible={notesVisible}
+          onClose={() => setNotesVisible(false)}
+        />
+
+        <ConnectScreen />
+        <View style={styles.infoContainer}>
+          <TouchableOpacity style={styles.infoButton} onPress={() => setNotesVisible(!notesVisible)}>
+            <FontAwesome name="info-circle" size={20} color="#333" />
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </ConnectionProvider>
   );
 }
 

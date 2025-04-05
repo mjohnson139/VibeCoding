@@ -1,38 +1,64 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import * as Network from 'expo-network';
+import { useConnection, ConnectionData } from './ConnectionProvider';
 
 const QRCodeGenerator = () => {
-  const [localIP, setLocalIP] = useState('');
-  const [port] = useState('8080'); // Default port for WebSocket server
+  const { connectionData, startServer, connectionState } = useConnection();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Start the WebSocket server when the component mounts
   useEffect(() => {
-    // Fetch the local IP address using expo-network
-    console.log('Fetching local IP address...');
-    Network.getIpAddressAsync()
-      .then(ip => {
-        console.log('Local IP fetched:', ip);
-        setLocalIP(ip);
-      })
-      .catch(error => {
-        console.error('Error fetching local IP:', error);
-      });
-  }, []);
+    const initServer = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Start the WebSocket server
+        await startServer();
+      } catch (err) {
+        console.error('Failed to start server:', err);
+        setError('Failed to start server: ' + (err instanceof Error ? err.message : String(err)));
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const qrValue = localIP ? `${localIP}:${port}` : 'Loading...';
+    if (!connectionData) {
+      initServer();
+    }
+  }, [startServer, connectionData]);
+
+  // Generate QR code value from connection data
+  const getQRCodeValue = (): string => {
+    if (!connectionData) return '';
+    
+    // Encode connection data as JSON
+    const jsonData = JSON.stringify(connectionData);
+    return jsonData;
+  };
 
   return (
     <View style={styles.container}>
-      {localIP ? (
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007BFF" />
+          <Text style={styles.loading}>Starting server...</Text>
+        </View>
+      ) : error ? (
+        <Text style={styles.error}>{error}</Text>
+      ) : connectionData ? (
         <>
           <Text style={styles.label}>Scan this QR code to connect:</Text>
-          <QRCode value={qrValue} size={200} />
-          <Text style={styles.info}>IP: {localIP}</Text>
-          <Text style={styles.info}>Port: {port}</Text>
+          <QRCode value={getQRCodeValue()} size={200} />
+          <Text style={styles.info}>IP: {connectionData.ip}</Text>
+          <Text style={styles.info}>Port: {connectionData.port}</Text>
+          <Text style={styles.status}>
+            Status: {connectionState === 'connected' ? 'Connected!' : 'Waiting for connection...'}
+          </Text>
         </>
       ) : (
-        <Text style={styles.loading}>Fetching local IP...</Text>
+        <Text style={styles.loading}>Preparing connection...</Text>
       )}
     </View>
   );
@@ -44,6 +70,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    alignItems: 'center',
   },
   label: {
     fontSize: 16,
@@ -57,6 +86,19 @@ const styles = StyleSheet.create({
   loading: {
     fontSize: 16,
     fontStyle: 'italic',
+    marginTop: 10,
+  },
+  error: {
+    fontSize: 16,
+    color: 'red',
+    textAlign: 'center',
+    margin: 10,
+  },
+  status: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 15,
+    color: '#007BFF',
   },
 });
 

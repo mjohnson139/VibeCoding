@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, Alert, TouchableOpacity } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
+import { useConnection, ConnectionData } from './ConnectionProvider';
 
 const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
+  const { connectToServer, connectionState } = useConnection();
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -13,13 +17,49 @@ const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
     })();
   }, []);
 
-  const handleBarCodeScanned = ({ type, data }: { type: string, data: string }) => {
-    if (scanned) return;
+  const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
+    if (scanned || connecting) return;
     setScanned(true);
-    Alert.alert('QR Code Scanned', `Data: ${data}`, [
-      { text: 'OK', onPress: () => setScanned(false) },
-    ]);
-    onScan(data);
+    
+    try {
+      // Parse the connection data from the QR code
+      let connectionData: ConnectionData;
+      try {
+        connectionData = JSON.parse(data) as ConnectionData;
+      } catch (err) {
+        throw new Error('Invalid QR code format. Expected valid connection data.');
+      }
+      
+      // Validate the connection data
+      if (!connectionData.ip || !connectionData.port) {
+        throw new Error('QR code missing IP or port information.');
+      }
+      
+      // Show connecting state
+      setConnecting(true);
+      Alert.alert('QR Code Scanned', `Connecting to ${connectionData.ip}:${connectionData.port}...`);
+      
+      // Call onScan callback with the raw data
+      onScan(data);
+      
+      // Connect to the server using the connection data
+      await connectToServer(connectionData);
+      
+      // Connection successful (handled by the ConnectionProvider state)
+    } catch (err) {
+      // Handle connection error
+      console.error('Connection error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to connect to server');
+      
+      // Show error alert
+      Alert.alert(
+        'Connection Error', 
+        err instanceof Error ? err.message : 'Failed to connect to server',
+        [{ text: 'OK', onPress: () => setScanned(false) }]
+      );
+    } finally {
+      setConnecting(false);
+    }
   };
 
   if (hasPermission === null) {
@@ -60,11 +100,29 @@ const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
             <View style={styles.crosshairHorizontal} />
             <View style={styles.crosshairVertical} />
           </View>
+          
+          {/* Display connection status if attempting to connect */}
+          {connecting && (
+            <View style={styles.statusContainer}>
+              <Text style={styles.statusText}>Connecting...</Text>
+            </View>
+          )}
+          
+          {/* Display connection error if there is one */}
+          {error && (
+            <View style={[styles.statusContainer, styles.errorContainer]}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
         </View>
       </CameraView>
-      {scanned && (
+      
+      {scanned && !connecting && (
         <View style={styles.buttonContainer}>
-          <Button title={'Tap to Scan Again'} onPress={() => setScanned(false)} />
+          <Button title={'Scan Again'} onPress={() => {
+            setScanned(false);
+            setError(null);
+          }} />
         </View>
       )}
     </View>
@@ -140,6 +198,27 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  statusContainer: {
+    position: 'absolute',
+    bottom: 50,
+    backgroundColor: 'rgba(0, 123, 255, 0.7)',
+    padding: 10,
+    borderRadius: 5,
+    width: '80%',
+    alignItems: 'center',
+  },
+  statusText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  errorContainer: {
+    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+  },
+  errorText: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

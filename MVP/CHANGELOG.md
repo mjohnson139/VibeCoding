@@ -2,6 +2,24 @@
 
 All notable changes to the Spitball app will be documented in this file.
 
+## [1.0.5] - 2025-04-05
+
+### Added
+- WebSocket server/client infrastructure for peer-to-peer communication
+- Real-time connection status with animated gradient feedback
+- Connection state management (connecting, connected, error)
+- Disconnect functionality with status indicators
+- Socket.IO integration for reliable WebSocket communications
+
+### Changed
+- Enhanced QR code generation to include connection data
+- Updated QR scanner to process connection information
+- Improved Connect Screen with dynamic connection status display
+
+### Fixed
+- Properly handle WebSocket connection errors
+- Improved error reporting for connection issues
+
 ## [1.0.4] - 2025-04-05
 
 ### Added

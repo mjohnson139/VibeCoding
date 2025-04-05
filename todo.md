@@ -18,10 +18,10 @@
 - [x] **Tinker:** Implement QR code scanning
 - [x] **Tinker:** Design and implement the qrcode view, that shows on start, with an image of a camera that allows you to switch to scan mode.  Keep the camera the size of the QRcode and show a faint view of the QR code that it generated as an overlay.  
 - [x] **Tinker:** Allow for a basic token based auth that requires a scam of the QRCode to be able to connect.  Also allow a basic user profile to be encoded in the QR code with a handle, and a the players stats.  
-- [ ] **Tinker:** Establish WebSocket server on one peer
-- [ ] **Tinker:** Establish WebSocket client connection on the other peer after scan
+- [x] **Tinker:** Establish WebSocket server on one peer
+- [x] **Tinker:** Establish WebSocket client connection on the other peer after scan
 - [x] **Tinker:** Implement connection status animation (oscillating gradient)
-- [ ] **Tinker:** Implement success (green glow) and failure (red flash + beep) states for animation
+- [x] **Tinker:** Implement success (green glow) and failure (red flash + beep) states for animation
 - [ ] **Test:** Test connection on the same local network
   - **Test Instructions:**
     1. Launch app on two different devices on the same WiFi network
