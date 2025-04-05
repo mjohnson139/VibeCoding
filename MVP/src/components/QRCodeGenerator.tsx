@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useConnection } from './ConnectionProvider';
-import { ConnectionState } from '../utils/websocketUtils';
+import { ConnectionState, ConnectionInfo } from '../utils/websocketUtils';
 
 const QRCodeGenerator = () => {
-  const { getConnectionInfo, connectionInfo, connectionState } = useConnection();
+  const { startServer, connectionInfo: contextConnectionInfo, connectionState, stopServer } = useConnection();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [localConnectionInfo, setLocalConnectionInfo] = useState<ConnectionInfo | null>(null);
   const hasInitialized = useRef(false);
 
   // Initialize connection info when component mounts - run only once
   useEffect(() => {
     const initConnection = async () => {
-      // Don't run if we've already initialized or already have connection info
-      if (hasInitialized.current || connectionInfo) {
+      // Don't run if we've already initialized
+      if (hasInitialized.current) {
         return;
       }
       
@@ -23,10 +24,24 @@ const QRCodeGenerator = () => {
       setError(null);
       
       try {
-        await getConnectionInfo();
+        // Start the server explicitly when generating QR code
+        const info = await startServer();
+        console.log('Server started and ready for QR code generation:', info);
+        
+        // Store connection info locally so we can display the QR code
+        setLocalConnectionInfo(info);
+        
+        // Show a notification about server limitations
+        setTimeout(() => {
+          Alert.alert(
+            'Connection Information',
+            'Your device is configured as a host. Note that direct connections may not work on all networks due to firewall restrictions.',
+            [{ text: 'OK', onPress: () => console.log('User acknowledged connection limitations') }]
+          );
+        }, 500);
       } catch (err) {
-        console.error('Failed to get connection info:', err);
-        setError('Failed to initialize connection: ' + 
+        console.error('Failed to start server:', err);
+        setError('Failed to start server: ' + 
           (err instanceof Error ? err.message : String(err)));
         // Reset the hasInitialized ref so we can try again if needed
         hasInitialized.current = false;
@@ -36,13 +51,28 @@ const QRCodeGenerator = () => {
     };
 
     initConnection();
-    // Empty dependency array ensures this only runs once on mount
+    
+    // Stop the server when component unmounts
+    return () => {
+      console.log('QRCodeGenerator unmounting, stopping server');
+      stopServer();
+    };
+  }, [startServer, stopServer]);
+
+  // Use either the local connection info or the one from context
+  const effectiveConnectionInfo = localConnectionInfo || contextConnectionInfo;
+  
+  // Reset initialization if we're remounting the component
+  useEffect(() => {
+    return () => {
+      hasInitialized.current = false;
+    };
   }, []);
 
   // Generate QR code value from connection data
   const getQRCodeValue = (): string => {
-    if (!connectionInfo) return '';
-    return JSON.stringify(connectionInfo);
+    if (!effectiveConnectionInfo) return '';
+    return JSON.stringify(effectiveConnectionInfo);
   };
 
   // Get connection status text
@@ -82,14 +112,14 @@ const QRCodeGenerator = () => {
         </View>
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
-      ) : connectionInfo ? (
+      ) : effectiveConnectionInfo ? (
         <>
           <Text style={styles.label}>Scan this QR code to connect:</Text>
           <QRCode value={getQRCodeValue()} size={200} />
           <View style={styles.infoContainer}>
-            <Text style={styles.info}>Device ID: {connectionInfo.deviceId}</Text>
-            <Text style={styles.info}>IP: {connectionInfo.ipAddress}</Text>
-            <Text style={styles.info}>Port: {connectionInfo.port}</Text>
+            <Text style={styles.info}>Device ID: {effectiveConnectionInfo.deviceId}</Text>
+            <Text style={styles.info}>IP: {effectiveConnectionInfo.ipAddress}</Text>
+            <Text style={styles.info}>Port: {effectiveConnectionInfo.port}</Text>
           </View>
           <Text style={[styles.status, { color: getStatusColor() }]}>
             {getStatusText()}

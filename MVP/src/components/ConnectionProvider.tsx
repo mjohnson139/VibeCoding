@@ -9,6 +9,8 @@ interface ConnectionContextProps {
   disconnect: () => void;
   sendMessage: (type: string, data: any) => void;
   getConnectionInfo: () => Promise<ConnectionInfo>;
+  startServer: () => Promise<ConnectionInfo>;
+  stopServer: () => void;
   isHost: boolean;
 }
 
@@ -20,6 +22,8 @@ const ConnectionContext = createContext<ConnectionContextProps>({
   disconnect: () => {},
   sendMessage: () => {},
   getConnectionInfo: async () => ({ deviceId: '', ipAddress: '', port: 0 }),
+  startServer: async () => ({ deviceId: '', ipAddress: '', port: 0 }),
+  stopServer: () => {},
   isHost: false,
 });
 
@@ -43,7 +47,30 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Clean up on unmount
     return () => {
       connection.disconnect();
+      connection.stopServer();
     };
+  }, [connection]);
+
+  // Start WebSocket server and get connection info
+  const startServer = useCallback(async (): Promise<ConnectionInfo> => {
+    try {
+      console.log('Starting WebSocket server...');
+      const info = await connection.startServer();
+      setConnectionInfo(info);
+      setIsHost(true);
+      return info;
+    } catch (error) {
+      console.error('Failed to start server:', error);
+      throw error;
+    }
+  }, [connection]);
+
+  // Stop the WebSocket server
+  const stopServer = useCallback((): void => {
+    console.log('Stopping WebSocket server...');
+    connection.stopServer();
+    setConnectionInfo(null);
+    setIsHost(false);
   }, [connection]);
 
   // Get connection info for QR code - memoized with useCallback to prevent recreating on every render
@@ -87,6 +114,8 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     disconnect,
     sendMessage,
     getConnectionInfo,
+    startServer,
+    stopServer,
     isHost,
   };
 

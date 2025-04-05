@@ -9,7 +9,7 @@ import { ConnectionState } from '../utils/websocketUtils';
 
 const ConnectScreen = () => {
   const [showScanner, setShowScanner] = useState(false);
-  const { connectionState, disconnect } = useConnection();
+  const { connectionState, disconnect, stopServer } = useConnection();
   
   // Animated values for oscillating gradient
   const [gradientProgress] = useState(new Animated.Value(0));
@@ -77,6 +77,18 @@ const ConnectScreen = () => {
     setShowScanner(false);
   };
 
+  // Toggle between QR generator and scanner modes
+  const toggleScannerMode = () => {
+    // If switching from QR code to scanner, stop the server
+    if (!showScanner) {
+      console.log('Switching to scanner mode, stopping any running server');
+      stopServer();
+    }
+    
+    // Toggle scanner mode
+    setShowScanner(!showScanner);
+  };
+
   // Switch to QR generator when successfully connected as client
   useEffect(() => {
     if (connectionState === ConnectionState.CONNECTED && showScanner) {
@@ -133,7 +145,7 @@ const ConnectScreen = () => {
 
       <TouchableOpacity
         style={styles.cameraButton}
-        onPress={() => setShowScanner(!showScanner)}
+        onPress={toggleScannerMode}
         disabled={connectionState === ConnectionState.CONNECTING}
       >
         <FontAwesome

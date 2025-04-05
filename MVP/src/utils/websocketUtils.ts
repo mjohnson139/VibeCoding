@@ -201,40 +201,76 @@ export class PeerConnection {
     return Math.random().toString(36).substring(2, 15);
   }
   
-  // Start WebSocket server
-  private async startServer(): Promise<void> {
+  // Start the WebSocket server explicitly and return connection info
+  async startServer(): Promise<ConnectionInfo> {
+    // Get the device ID
+    let deviceId = this.cachedDeviceId;
+    if (!deviceId) {
+      deviceId = this.generateDeviceId();
+      this.cachedDeviceId = deviceId;
+      await this.saveDeviceId(deviceId);
+    }
+    
+    // Get the IP address
+    const ipAddress = await Network.getIpAddressAsync();
+    
     // If server is already running, don't start another one
     if (this.server && this.server.isRunning()) {
       console.log('WebSocket server is already running');
-      return;
+    } else {
+      // Create and start the WebSocket server
+      this.server = new WebSocketServer();
+      const success = await this.server.start();
+      
+      if (success) {
+        console.log('WebSocket server started successfully, accepting all connections');
+        this.isHost = true;
+        
+        // Set up event handlers for the server
+        this.server.onConnection((socket) => {
+          console.log('New client connected to server');
+          
+          // When a client connects, update the connection state
+          this.setConnectionState(ConnectionState.CONNECTED);
+        });
+        
+        this.server.onMessage((data, socket) => {
+          console.log('Received message from client:', data);
+          
+          // Forward incoming messages to the message callback
+          if (this.onMessageCallback) {
+            this.onMessageCallback(data);
+          }
+        });
+      } else {
+        console.error('Failed to start WebSocket server');
+        throw new Error('Failed to start WebSocket server');
+      }
     }
     
-    // Create and start the WebSocket server
-    this.server = new WebSocketServer();
-    const success = await this.server.start();
+    // Always return connection info even if server is mocked
+    const connectionInfo = {
+      deviceId,
+      ipAddress,
+      port: 8080, // Default port
+      username: 'Player1', // Could be customized by user
+    };
     
-    if (success) {
-      console.log('WebSocket server started successfully');
-      this.isHost = true;
-      
-      // Set up event handlers for the server
-      this.server.onConnection((socket) => {
-        console.log('New client connected to server');
-        
-        // When a client connects, update the connection state
-        this.setConnectionState(ConnectionState.CONNECTED);
-      });
-      
-      this.server.onMessage((data, socket) => {
-        console.log('Received message from client:', data);
-        
-        // Forward incoming messages to the message callback
-        if (this.onMessageCallback) {
-          this.onMessageCallback(data);
-        }
-      });
+    // Log the connection info for debugging
+    console.log('Generated connection info for QR code:', JSON.stringify(connectionInfo));
+    
+    return connectionInfo;
+  }
+  
+  // Stop the WebSocket server explicitly
+  stopServer(): void {
+    if (this.server) {
+      console.log('Stopping WebSocket server...');
+      this.server.stop();
+      this.server = null;
+      this.isHost = false;
     } else {
-      console.error('Failed to start WebSocket server');
+      console.log('No WebSocket server running to stop');
     }
   }
   
