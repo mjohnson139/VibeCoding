@@ -6,6 +6,8 @@ import BuildNotesComponent from './src/components/BuildNotesComponent';
 import { environmentService } from './src/config/environments';
 import QRCodeGenerator from './src/components/QRCodeGenerator';
 import QRCodeScanner from './src/components/QRCodeScanner';
+import ConnectScreen from './src/components/ConnectScreen';
+import { FontAwesome } from '@expo/vector-icons';
 
 export default function App() {
   const [notesVisible, setNotesVisible] = useState(false);
@@ -42,7 +44,7 @@ export default function App() {
       {/* Version Indicator - styled similar to Environment Indicator but with light gray color */}
       <TouchableOpacity 
         style={[styles.versionContainer, { backgroundColor: '#9e9e9e' }]}
-        onPress={() => setNotesVisible(true)}
+onPress={() => setNotesVisible(true)}
       >
         <Animated.View style={{ opacity: fadeAnim }}>
           <Text style={styles.versionText}>v{appVersion}</Text>
@@ -56,27 +58,12 @@ export default function App() {
         onClose={() => setNotesVisible(false)}
       />
 
-      {showQRCode ? (
-        <QRCodeGenerator />
-      ) : (
-        <TouchableOpacity
-          style={styles.qrButton}
-          onPress={() => setShowQRCode(true)}
-        >
-          <Text style={styles.qrButtonText}>Generate QR Code</Text>
+      <ConnectScreen />
+      <View style={styles.infoContainer}>
+        <TouchableOpacity style={styles.infoButton} onPress={() => setNotesVisible(!notesVisible)}>
+          <FontAwesome name="info-circle" size={20} color="#333" />
         </TouchableOpacity>
-      )}
-
-      {showScanner ? (
-        <QRCodeScanner onScan={handleScan} />
-      ) : (
-        <TouchableOpacity
-          style={styles.scanButton}
-          onPress={() => setShowScanner(true)}
-        >
-          <Text style={styles.scanButtonText}>Scan QR Code</Text>
-        </TouchableOpacity>
-      )}
+      </View>
     </View>
   );
 }

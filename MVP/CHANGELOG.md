@@ -2,6 +2,22 @@
 
 All notable changes to the Spitball app will be documented in this file.
 
+## [1.0.4] - 2025-04-05
+
+### Added
+- Redesigned ConnectScreen component with improved layout
+- Enhanced QR code scanner with intuitive crosshair interface
+
+### Changed
+- Improved camera view with constrained dimensions
+- Updated scanner UI with rounded frame and targeting crosshairs
+- Better organization of components in main App screen
+
+### Fixed
+- Resolved layout issues with overlapping components
+- Fixed camera view sizing and positioning
+- Adjusted QR code scanner to be more visually appealing
+
 ## [1.0.3] - 2025-04-05
 
 ### Added

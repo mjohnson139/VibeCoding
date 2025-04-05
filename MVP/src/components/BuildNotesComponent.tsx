@@ -36,9 +36,9 @@ const BuildNotesComponent: React.FC<BuildNotesProps> = ({ version, isVisible, on
   };
   
   return (
-    <View style={styles.notesContainer}>
-      <View style={styles.notesHeader}>
-        <Text style={styles.notesTitle}>{noteData.title} (Build {version})</Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>{noteData.title} (Build {version})</Text>
         <TouchableOpacity onPress={onClose}>
           <Text style={styles.closeButton}>✕</Text>
         </TouchableOpacity>
@@ -47,11 +47,11 @@ const BuildNotesComponent: React.FC<BuildNotesProps> = ({ version, isVisible, on
       {loading ? (
         <Text style={styles.loadingText}>Loading release notes...</Text>
       ) : (
-        <ScrollView style={styles.notesScrollView}>
+        <ScrollView style={styles.scrollView}>
           {noteData.notes.map((note, index) => (
             <View key={index} style={styles.noteItem}>
               <Text style={styles.bulletPoint}>•</Text>
-              <Text style={styles.noteText}>{note}</Text>
+              <Text style={styles.notesText}>{note}</Text>
             </View>
           ))}
         </ScrollView>
@@ -61,11 +61,11 @@ const BuildNotesComponent: React.FC<BuildNotesProps> = ({ version, isVisible, on
 };
 
 const styles = StyleSheet.create({
-  notesContainer: {
+  container: {
     position: 'absolute',
     top: 100,
     right: 10,
-    width: 250,
+    width: 300,
     maxHeight: 400,
     backgroundColor: '#fff',
     borderWidth: 1,
@@ -78,23 +78,22 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  notesHeader: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
   },
-  notesTitle: {
+  title: {
     fontWeight: 'bold',
-    fontSize: 14,
-    flex: 1,
+    fontSize: 16,
   },
   closeButton: {
     fontSize: 16,
     fontWeight: 'bold',
     padding: 2,
   },
-  notesScrollView: {
+  scrollView: {
     maxHeight: 300,
   },
   noteItem: {
@@ -104,9 +103,9 @@ const styles = StyleSheet.create({
   bulletPoint: {
     marginRight: 6,
   },
-  noteText: {
-    fontSize: 12,
-    flex: 1,
+  notesText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   loadingText: {
     fontSize: 12,

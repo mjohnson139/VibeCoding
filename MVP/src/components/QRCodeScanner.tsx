@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, Alert, TouchableOpacity } from 'react-native';
-import { Camera, CameraView, CameraType } from 'expo-camera';
+import { Camera, CameraView } from 'expo-camera';
 
 const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -51,11 +51,15 @@ const QRCodeScanner = ({ onScan }: { onScan: (data: string) => void }) => {
     <View style={styles.container}>
       <CameraView
         style={styles.camera}
-        facing="back" // Use string 'back' instead of CameraType.back
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned} // Prevent duplicate scans
+        facing="back"
+        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
       >
         <View style={styles.overlay}>
-          <Text style={styles.scanText}>Scanning for QR Code...</Text>
+          <View style={styles.scanFrame}>
+            {/* Crosshair lines */}
+            <View style={styles.crosshairHorizontal} />
+            <View style={styles.crosshairVertical} />
+          </View>
         </View>
       </CameraView>
       {scanned && (
@@ -76,21 +80,39 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
     width: '100%',
+    height: '100%',
+    position: 'absolute', // Ensure it doesn't overflow the parent container
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   overlay: {
     flex: 1,
     backgroundColor: 'transparent',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 30,
   },
-  scanText: {
-    fontSize: 18,
-    color: 'white',
-    fontWeight: 'bold',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 10,
-    borderRadius: 5,
+  scanFrame: {
+    width: 200,
+    height: 200,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  crosshairHorizontal: {
+    position: 'absolute',
+    width: 30,
+    height: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  crosshairVertical: {
+    position: 'absolute',
+    height: 30,
+    width: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   buttonContainer: {
     position: 'absolute',
