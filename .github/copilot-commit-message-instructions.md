@@ -1,68 +1,43 @@
-# Commit Message Instructions
+# Commit Message Guidelines
 
-## Commit Message Structure
+## Pre-Commit Steps
+1. `git status` → Review changed files
+2. Update todo.md → Mark completed tasks [x]
+3. For releases → Update build number in app.json + CHANGELOG.md
+
+## Format: `type(scope): summary`
+
+## Types
+feat: Feature | fix: Bug fix | docs: Documentation
+refactor: Code restructuring | style: Formatting
+test: Tests | perf: Performance | chore: Maintenance
+
+## Scope Examples
+- Feature area: `qrcode`, `websocket`, `3dscene`
+- Stage transition: `idea->tinker`, `tinker->test`
+- Version: `v1.2.0`
+
+## Guidelines for Humans & Copilot
+- Imperative mood: "add" not "added"
+- Summary: < 50 chars, no period
+- Body: Explain what & why
+- Use recent prompts/chat to summarize changes
+- Include motivation for changes
+- Reference relevant issues: "Fixes #123"
+- Always update todo.md before committing
+- Release format: `chore(release): bump to 1.2.0`
+
+## Examples
+```
+feat(qrcode/tinker): implement QR code generation
+
+Generate QR codes with local IP/port for WebSocket.
+Used react-native-qrcode-svg per requirements.
+```
 
 ```
-<type>(<scope>): <summary>
+chore(release): bump to 1.2.0
 
-<body>
-
-<footer>
-```
-
-## Elements
-
-1. **Type**: Describes the kind of change
-   - `feat`: A new feature
-   - `fix`: A bug fix
-   - `docs`: Documentation changes
-   - `style`: Changes that don't affect code (formatting, etc.)
-   - `refactor`: Code change that neither fixes a bug nor adds a feature
-   - `perf`: Code change that improves performance
-   - `test`: Adding missing tests or correcting existing tests
-   - `build`: Changes that affect the build system
-   - `chore`: Other changes that don't modify src or test files
-
-2. **Scope**: (Optional) The feature, module, or component affected
-   - Examples: `qrcode`, `websocket`, `3dscene`, `auth`, etc.
-
-3. **Summary**: Brief description of the change
-   - Use imperative, present tense: "change" not "changed" or "changes"
-   - Don't capitalize the first letter
-   - No period at the end
-   - Keep it under 50 characters when possible
-   - Should complete the sentence: "If applied, this commit will..."
-
-4. **Body**: (Optional) More detailed description
-   - Use imperative, present tense
-   - Include motivation for the change
-   - Explain changes in more detail
-
-5. **Footer**: (Optional) References to issues, PRs, or breaking changes
-   - Reference issues: `Fixes #123` or `Relates to #456`
-   - Breaking changes: Start with `BREAKING CHANGE:`
-
-## Vibe Coding Specific Conventions
-
-- Include the feature stage in the scope: `feat(idea->tinker)`, `feat(tinker->test)`
-- Summarize the prompts used to build the feature
-- For version-related commits, include version tag: `feat(v1.2.0): ...`
-- **Always update todo.md**: Before committing, ensure the todo.md file is updated with completed tasks marked with [x]
-
-## Pre-Commit Checklist
-
-1. Update the todo.md file to mark completed tasks
-2. Ensure commit message follows the structure above
-3. Include feature stage transitions in the commit scope when applicable
-4. Reference any relevant issues or PRs in the footer
-
-## Example
-
-```
-feat(qrcode/tinker): implement QR code generation for WebSocket connection
-
-Generate QR codes containing local IP address and port number.
-Used react-native-qrcode-svg for rendering.
-
-Completes first part of the peer connection feature.
+Build: 20250404.1
+Added QR code and WebSocket connection features.
 ```

@@ -9,6 +9,8 @@
 - [x] Create a list of development rules in the .github directory.
 - [x] List workflow optimization files in .github directory.
 - [x] Create versioning instructions file.
+- [x] Create instruction files in the .github directory
+- [ ] Review and condense remaining instruction files (PR descriptions, code reviews)
 
 ## Feature: Peer Discovery & Connection (PRD 3.2)
 

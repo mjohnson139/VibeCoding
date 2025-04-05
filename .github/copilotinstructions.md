@@ -1,69 +1,45 @@
-# Development Rules for Spitball Mobile App
+# Expo Development Rules
 
-This document outlines the development rules and guidelines for the Spitball Mobile App project.
+## Feature Lifecycle
+idea → tinker → test → release → monitor → refine
 
-## Core Development Rules
+## Core Rules
+- Update todo.md before each commit [REQUIRED]
+- Use TypeScript for all new code
+- Create tests for all features
+- Follow React Native performance best practices
+- Ensure mobile battery efficiency
 
-1. **Feature Development Stages**
-   - All features must go through the following stages:
-     - **Idea**: Initial concept and requirements gathering
-     - **Tinker**: Development and implementation phase
-     - **Test**: Testing against specified test cases
-     - **Release**: Deployment to users
-     - **Monitor**: Observation of feature in production
-     - **Refine**: Improvements based on feedback and monitoring
+## Component Structure
+- Use functional components with hooks
+- Keep components <150 lines
+- Create reusable components in `/components`
+- Define types/interfaces in separate files
+- Use Context API for global state
 
-2. **Version Control**
-   - All changes must be tracked through Git
-   - Commit messages should be concise and accurate
-   - Commit messages should be derived from summarization of prompts used to build the feature
-   - Use feature branches for new development
-   - Always update todo.md with completed tasks before committing
+## Expo Best Practices
+- Use Expo SDK APIs over native modules when available
+- Implement responsive layouts with `Dimensions` API
+- Optimize images using Expo's asset system
+- Use `expo-constants` for environment config
+- Prefer `expo-font` for custom typography
+- Leverage `expo-updates` for OTA updates
 
-3. **Testing**
-   - All features must have corresponding tests
-   - Tests should run automatically when code changes are made
-   - Async notifications should be sent with test results
+## React Native Patterns
+- Use React Navigation for routing
+- Implement optimistic UI updates
+- Handle offline states gracefully
+- Implement proper keyboard handling
+- Use proper error boundaries
 
-4. **Code Style**
-   - Use TypeScript for type safety
-   - Follow React Native best practices
-   - Components should be modular and reusable
-   - Use functional components with hooks
-   - Keep components small and focused on a single responsibility
+## Performance Guidelines
+- Memoize expensive components with React.memo()
+- Use useCallback() for functions passed to children
+- Virtualize long lists with FlatList
+- Implement proper loading states
+- Optimize re-renders with useMemo()
 
-5. **Documentation**
-   - Update PRD document with any changes to requirements
-   - Document complex logic with comments
-   - Keep the TODO list updated
-   - Document APIs and interfaces
-
-6. **Performance**
-   - Optimize rendering performance
-   - Minimize bundle size
-   - Be mindful of battery usage on mobile devices
-
-7. **Security**
-   - Follow security best practices
-   - Don't store sensitive information in code
-   - Use secure communication methods
-
-8. **Peer Review**
-   - All code should be reviewed before merging
-   - Address feedback from reviews
-   - Ensure tests pass before merging
-
-## AI-Assisted Development Guidelines
-
-1. When generating code with AI:
-   - Review all generated code for correctness
-   - Understand the implementation details
-   - Test thoroughly to ensure functionality
-   - Refactor as needed for maintainability
-   - Ensure generated code follows project standards
-
-2. Use AI efficiently:
-   - Provide clear, detailed prompts
-   - Break down complex tasks into smaller, manageable chunks
-   - Iteratively refine AI-generated solutions
-   - Use AI for repetitive boilerplate code
+## Testing Standards
+- Write unit tests for utils and hooks
+- Test components with React Testing Library
+- Implement E2E tests for critical flows
