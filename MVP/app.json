@@ -1,25 +1,27 @@
 {
   "expo": {
-    "name": "MVP",
-    "slug": "MVP",
+    "name": "Spitball",
+    "slug": "spitball",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/spitball-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/spitball-splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "buildNumber": "20250404.1"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/spitball-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "versionCode": 20250404001
     },
     "web": {
       "favicon": "./assets/favicon.png"
