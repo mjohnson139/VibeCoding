@@ -5,10 +5,14 @@ import EnvironmentIndicator from './src/components/EnvironmentIndicator';
 import BuildNotesComponent from './src/components/BuildNotesComponent';
 import { environmentService } from './src/config/environments';
 import QRCodeGenerator from './src/components/QRCodeGenerator';
+import QRCodeScanner from './src/components/QRCodeScanner';
+import CameraTest from './src/components/CameraTest';
 
 export default function App() {
   const [notesVisible, setNotesVisible] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [showCameraTest, setShowCameraTest] = useState(false);
   // Updated way to access the version in newer Expo SDK
   const appVersion = Constants.expoConfig?.version || '1.0.1'; // Default to latest version if unavailable
   const [environment, setEnvironment] = useState(environmentService.getEnvironment());
@@ -26,6 +30,11 @@ export default function App() {
 
   // Get environment color for consistent styling
   const { environmentColor } = environmentService.getConfig();
+
+  const handleScan = (data: string) => {
+    console.log('Scanned data:', data);
+    setShowScanner(false);
+  };
 
   return (
     <View style={styles.container}>
@@ -57,6 +66,28 @@ export default function App() {
           onPress={() => setShowQRCode(true)}
         >
           <Text style={styles.qrButtonText}>Generate QR Code</Text>
+        </TouchableOpacity>
+      )}
+
+      {showScanner ? (
+        <QRCodeScanner onScan={handleScan} />
+      ) : (
+        <TouchableOpacity
+          style={styles.scanButton}
+          onPress={() => setShowScanner(true)}
+        >
+          <Text style={styles.scanButtonText}>Scan QR Code</Text>
+        </TouchableOpacity>
+      )}
+
+      {showCameraTest ? (
+        <CameraTest />
+      ) : (
+        <TouchableOpacity
+          style={styles.qrButton}
+          onPress={() => setShowCameraTest(true)}
+        >
+          <Text style={styles.qrButtonText}>Test Camera</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -173,6 +204,17 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   qrButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  scanButton: {
+    padding: 10,
+    backgroundColor: '#28a745',
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  scanButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',

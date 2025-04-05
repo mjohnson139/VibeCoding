@@ -2,7 +2,7 @@
   "expo": {
     "name": "Spitball",
     "slug": "spitball",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/spitball-icon.png",
     "userInterfaceStyle": "light",
@@ -21,13 +21,13 @@
         "foregroundImage": "./assets/spitball-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "versionCode": 20250405002
+      "versionCode": 2100000000
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-barcode-scanner"
+      "expo-camera"
     ]
   }
 }

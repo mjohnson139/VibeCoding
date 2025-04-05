@@ -2,6 +2,17 @@
 
 All notable changes to the Spitball app will be documented in this file.
 
+## [1.0.3] - 2025-04-05
+
+### Added
+- QR code scanning feature for peer discovery
+
+### Changed
+- Updated QRCodeScanner to use the latest expo-camera API
+
+### Fixed
+- Resolved issues with camera permissions and facing property
+
 ## [1.0.2] - 2025-04-05
 
 ### Added
