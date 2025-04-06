@@ -14,14 +14,16 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "20250405.3"
+      "buildNumber": "20250406.1",
+      "bundleIdentifier": "com.vibecoding.spitball"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/spitball-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "versionCode": 2100000000
+      "versionCode": 2025040601,
+      "package": "com.vibecoding.spitball"
     },
     "web": {
       "favicon": "./assets/favicon.png"

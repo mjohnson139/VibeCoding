@@ -2,6 +2,22 @@
 
 All notable changes to the Spitball app will be documented in this file.
 
+## [1.0.2] - 2025-04-06
+
+### Added
+- Game screen transition after successful connection
+- Centered animation during connection process
+
+### Changed
+- Updated connection animation to appear in the center of the screen
+- Improved connection flow with automatic transition to game screen
+- Updated build numbers to reflect current date (20250406)
+
+### Fixed
+- Resolved "Cannot find native module 'ExpoNearbyConnectionsModule'" error
+- Fixed npm vulnerabilities (reduced from 110 to 13)
+- Generated native code directories for proper module linking
+
 ## [1.0.5] - 2025-04-05
 
 ### Added
@@ -93,4 +109,3 @@ All notable changes to the Spitball app will be documented in this file.
 - Initial application setup
 - Basic project structure
 - Installation of core dependencies (expo-barcode-scanner, react-native-qrcode-svg, @react-three/fiber, three, expo-sensors)
-- Setup of Expo/React Native environment

@@ -6,9 +6,11 @@ import QRCodeGenerator from './QRCodeGenerator';
 import QRCodeScanner from './QRCodeScanner';
 import { useConnection } from './ConnectionProvider';
 import { ConnectionState } from '../utils/websocketUtils';
+import GameScreen from './GameScreen';
 
 const ConnectScreen = () => {
   const [showScanner, setShowScanner] = useState(false);
+  const [showGame, setShowGame] = useState(false);
   const { connectionState, disconnect, stopServer } = useConnection();
   
   // Animated values for oscillating gradient
@@ -75,6 +77,7 @@ const ConnectScreen = () => {
   const handleDisconnect = () => {
     disconnect();
     setShowScanner(false);
+    setShowGame(false);
   };
 
   // Toggle between QR generator and scanner modes
@@ -89,27 +92,37 @@ const ConnectScreen = () => {
     setShowScanner(!showScanner);
   };
 
-  // Switch to QR generator when successfully connected as client
+  // Transition to game screen when successfully connected
   useEffect(() => {
-    if (connectionState === ConnectionState.CONNECTED && showScanner) {
-      // After successful connection, automatically switch back to QR generator view
+    if (connectionState === ConnectionState.CONNECTED) {
+      // After successful connection, show the connection success state briefly
       setTimeout(() => {
-        setShowScanner(false);
+        setShowGame(true);
       }, 1500); // Small delay to show the connection success state
+    } else if (connectionState === ConnectionState.DISCONNECTED) {
+      setShowGame(false);
     }
-  }, [connectionState, showScanner]);
+  }, [connectionState]);
+
+  // If connected and past the delay, show the game screen
+  if (showGame && connectionState === ConnectionState.CONNECTED) {
+    return <GameScreen />;
+  }
 
   return (
     <View style={styles.container}>
       {/* Connection status banner - don't show error state when scanner is active */}
       {connectionState !== ConnectionState.DISCONNECTED && 
        !(showScanner && connectionState === ConnectionState.ERROR) && (
-        <Animated.View style={styles.statusBanner}>
+        <Animated.View style={getStatusBannerStyle()}>
           <LinearGradient
             colors={getGradientColors() as string[]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.gradient}
+            style={[
+              styles.gradient,
+              connectionState === ConnectionState.CONNECTING && styles.centeredGradient
+            ]}
           >
             <Text style={styles.statusText}>
               {connectionState === ConnectionState.CONNECTED
@@ -156,6 +169,14 @@ const ConnectScreen = () => {
       </TouchableOpacity>
     </View>
   );
+
+  // Determine the status banner style based on connection state
+  function getStatusBannerStyle() {
+    if (connectionState === ConnectionState.CONNECTING) {
+      return styles.centeredStatusBanner;
+    }
+    return styles.statusBanner;
+  }
 };
 
 const styles = StyleSheet.create({
@@ -195,12 +216,26 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 1000,
   },
+  centeredStatusBanner: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    right: 0,
+    transform: [{ translateY: -25 }],
+    zIndex: 1000,
+  },
   gradient: {
     paddingVertical: 12,
     paddingHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  centeredGradient: {
+    paddingVertical: 20,
+    borderRadius: 10,
+    marginHorizontal: 20,
+    justifyContent: 'center',
   },
   statusText: {
     color: 'white',
